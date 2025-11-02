@@ -3,41 +3,85 @@ import { AccountSettings } from "@/components/settings/AccountSettings";
 import { PlatformSettings } from "@/components/settings/PlatformSettings";
 import { PasswordSettings } from "@/components/settings/PasswordSettings";
 import { SubscriptionSettings } from "@/components/settings/SubscriptionSettings";
-import { User, Building2, Key, CreditCard } from "lucide-react";
+import { GeneralSettings } from "@/components/settings/GeneralSettings";
+import { WorkOrderSettings } from "@/components/settings/WorkOrderSettings";
+import { TechniciansSettings } from "@/components/settings/TechniciansSettings";
+import { NotificationsSettings } from "@/components/settings/NotificationsSettings";
+import { UISettings } from "@/components/settings/UISettings";
+import { IntegrationsSettings } from "@/components/settings/IntegrationsSettings";
+import { SecuritySettings } from "@/components/settings/SecuritySettings";
+import { 
+  User, 
+  Building2, 
+  Key, 
+  CreditCard, 
+  Settings as SettingsIcon,
+  ClipboardList,
+  Users,
+  Bell,
+  Palette,
+  Plug,
+  Shield
+} from "lucide-react";
 
 export default function Settings() {
   return (
-    <div className="max-w-7xl mx-auto p-6">
+    <div className="max-w-7xl mx-auto p-4 sm:p-6">
       <div className="mb-6">
-        <h1 className="text-3xl font-bold text-foreground">إعدادات الحساب</h1>
+        <h1 className="text-2xl sm:text-3xl font-bold text-foreground flex items-center gap-3">
+          <SettingsIcon className="h-7 w-7 text-primary" />
+          مركز التحكم - UberFix.shop
+        </h1>
+        <p className="text-muted-foreground mt-2">
+          إدارة شاملة لجميع إعدادات التطبيق من مكان واحد
+        </p>
       </div>
       
       <Tabs defaultValue="account" dir="rtl" className="space-y-6">
-        <TabsList className="grid w-full grid-cols-2 md:grid-cols-5 gap-2">
-          <TabsTrigger value="account" className="flex items-center gap-2">
-            <User className="h-4 w-4" />
-            <span className="hidden md:inline">إعدادات الحساب</span>
-            <span className="md:hidden">الحساب</span>
+        <TabsList className="grid w-full grid-cols-3 md:grid-cols-6 lg:grid-cols-11 gap-1 h-auto p-1">
+          <TabsTrigger value="account" className="flex items-center gap-1 text-xs sm:text-sm px-2 py-2">
+            <User className="h-3 w-3 sm:h-4 sm:w-4" />
+            <span className="hidden sm:inline">الحساب</span>
           </TabsTrigger>
-          <TabsTrigger value="platform" className="flex items-center gap-2">
-            <Building2 className="h-4 w-4" />
-            <span className="hidden md:inline">إعدادات المنصة</span>
-            <span className="md:hidden">المنصة</span>
+          <TabsTrigger value="general" className="flex items-center gap-1 text-xs sm:text-sm px-2 py-2">
+            <Building2 className="h-3 w-3 sm:h-4 sm:w-4" />
+            <span className="hidden sm:inline">عام</span>
           </TabsTrigger>
-          <TabsTrigger value="services" className="flex items-center gap-2">
-            <Building2 className="h-4 w-4" />
-            <span className="hidden md:inline">إعدادات الخدمات</span>
-            <span className="md:hidden">الخدمات</span>
+          <TabsTrigger value="workorders" className="flex items-center gap-1 text-xs sm:text-sm px-2 py-2">
+            <ClipboardList className="h-3 w-3 sm:h-4 sm:w-4" />
+            <span className="hidden sm:inline">الطلبات</span>
           </TabsTrigger>
-          <TabsTrigger value="password" className="flex items-center gap-2">
-            <Key className="h-4 w-4" />
-            <span className="hidden md:inline">إعادة تعيين كلمة المرور</span>
-            <span className="md:hidden">كلمة المرور</span>
+          <TabsTrigger value="technicians" className="flex items-center gap-1 text-xs sm:text-sm px-2 py-2">
+            <Users className="h-3 w-3 sm:h-4 sm:w-4" />
+            <span className="hidden sm:inline">الفنيون</span>
           </TabsTrigger>
-          <TabsTrigger value="subscription" className="flex items-center gap-2">
-            <CreditCard className="h-4 w-4" />
-            <span className="hidden md:inline">اشتراك النظام</span>
-            <span className="md:hidden">الاشتراك</span>
+          <TabsTrigger value="notifications" className="flex items-center gap-1 text-xs sm:text-sm px-2 py-2">
+            <Bell className="h-3 w-3 sm:h-4 sm:w-4" />
+            <span className="hidden sm:inline">الإشعارات</span>
+          </TabsTrigger>
+          <TabsTrigger value="ui" className="flex items-center gap-1 text-xs sm:text-sm px-2 py-2">
+            <Palette className="h-3 w-3 sm:h-4 sm:w-4" />
+            <span className="hidden sm:inline">الواجهة</span>
+          </TabsTrigger>
+          <TabsTrigger value="integrations" className="flex items-center gap-1 text-xs sm:text-sm px-2 py-2">
+            <Plug className="h-3 w-3 sm:h-4 sm:w-4" />
+            <span className="hidden sm:inline">التكاملات</span>
+          </TabsTrigger>
+          <TabsTrigger value="security" className="flex items-center gap-1 text-xs sm:text-sm px-2 py-2">
+            <Shield className="h-3 w-3 sm:h-4 sm:w-4" />
+            <span className="hidden sm:inline">الأمان</span>
+          </TabsTrigger>
+          <TabsTrigger value="platform" className="flex items-center gap-1 text-xs sm:text-sm px-2 py-2">
+            <Building2 className="h-3 w-3 sm:h-4 sm:w-4" />
+            <span className="hidden sm:inline">المنصة</span>
+          </TabsTrigger>
+          <TabsTrigger value="password" className="flex items-center gap-1 text-xs sm:text-sm px-2 py-2">
+            <Key className="h-3 w-3 sm:h-4 sm:w-4" />
+            <span className="hidden sm:inline">كلمة المرور</span>
+          </TabsTrigger>
+          <TabsTrigger value="subscription" className="flex items-center gap-1 text-xs sm:text-sm px-2 py-2">
+            <CreditCard className="h-3 w-3 sm:h-4 sm:w-4" />
+            <span className="hidden sm:inline">الاشتراك</span>
           </TabsTrigger>
         </TabsList>
 
@@ -45,14 +89,36 @@ export default function Settings() {
           <AccountSettings />
         </TabsContent>
 
-        <TabsContent value="platform">
-          <PlatformSettings />
+        <TabsContent value="general">
+          <GeneralSettings />
         </TabsContent>
 
-        <TabsContent value="services">
-          <div className="text-center py-12 border rounded-lg bg-muted/50">
-            <p className="text-muted-foreground">قريباً - إعدادات الخدمات</p>
-          </div>
+        <TabsContent value="workorders">
+          <WorkOrderSettings />
+        </TabsContent>
+
+        <TabsContent value="technicians">
+          <TechniciansSettings />
+        </TabsContent>
+
+        <TabsContent value="notifications">
+          <NotificationsSettings />
+        </TabsContent>
+
+        <TabsContent value="ui">
+          <UISettings />
+        </TabsContent>
+
+        <TabsContent value="integrations">
+          <IntegrationsSettings />
+        </TabsContent>
+
+        <TabsContent value="security">
+          <SecuritySettings />
+        </TabsContent>
+
+        <TabsContent value="platform">
+          <PlatformSettings />
         </TabsContent>
 
         <TabsContent value="password">

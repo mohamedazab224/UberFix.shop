@@ -14,6 +14,156 @@ export type Database = {
   }
   public: {
     Tables: {
+      app_settings: {
+        Row: {
+          allow_edit_after_start: boolean | null
+          allow_self_registration: boolean | null
+          allow_technician_quotes: boolean | null
+          app_logo_url: string | null
+          app_name: string
+          auto_backup_enabled: boolean | null
+          background_color: string | null
+          backup_frequency: string | null
+          company_address: string | null
+          company_email: string | null
+          company_phone: string | null
+          created_at: string
+          custom_css: string | null
+          default_currency: string | null
+          default_language: string | null
+          enable_2fa: boolean | null
+          enable_email_notifications: boolean | null
+          enable_in_app_notifications: boolean | null
+          enable_reminders: boolean | null
+          enable_sms_notifications: boolean | null
+          enable_technician_rating: boolean | null
+          erpnext_enabled: boolean | null
+          erpnext_url: string | null
+          google_maps_enabled: boolean | null
+          id: string
+          lock_sensitive_settings: boolean | null
+          map_style: string | null
+          max_execution_time: number | null
+          notification_templates: Json | null
+          notification_types: Json | null
+          order_stages: Json | null
+          primary_color: string | null
+          require_manager_approval: boolean | null
+          secondary_color: string | null
+          session_timeout: number | null
+          show_footer: boolean | null
+          show_technicians_on_map: boolean | null
+          smtp_from_email: string | null
+          smtp_host: string | null
+          smtp_password: string | null
+          smtp_port: number | null
+          smtp_username: string | null
+          technician_statuses: Json | null
+          theme_mode: string | null
+          timezone: string | null
+          updated_at: string
+          updated_by: string | null
+        }
+        Insert: {
+          allow_edit_after_start?: boolean | null
+          allow_self_registration?: boolean | null
+          allow_technician_quotes?: boolean | null
+          app_logo_url?: string | null
+          app_name?: string
+          auto_backup_enabled?: boolean | null
+          background_color?: string | null
+          backup_frequency?: string | null
+          company_address?: string | null
+          company_email?: string | null
+          company_phone?: string | null
+          created_at?: string
+          custom_css?: string | null
+          default_currency?: string | null
+          default_language?: string | null
+          enable_2fa?: boolean | null
+          enable_email_notifications?: boolean | null
+          enable_in_app_notifications?: boolean | null
+          enable_reminders?: boolean | null
+          enable_sms_notifications?: boolean | null
+          enable_technician_rating?: boolean | null
+          erpnext_enabled?: boolean | null
+          erpnext_url?: string | null
+          google_maps_enabled?: boolean | null
+          id?: string
+          lock_sensitive_settings?: boolean | null
+          map_style?: string | null
+          max_execution_time?: number | null
+          notification_templates?: Json | null
+          notification_types?: Json | null
+          order_stages?: Json | null
+          primary_color?: string | null
+          require_manager_approval?: boolean | null
+          secondary_color?: string | null
+          session_timeout?: number | null
+          show_footer?: boolean | null
+          show_technicians_on_map?: boolean | null
+          smtp_from_email?: string | null
+          smtp_host?: string | null
+          smtp_password?: string | null
+          smtp_port?: number | null
+          smtp_username?: string | null
+          technician_statuses?: Json | null
+          theme_mode?: string | null
+          timezone?: string | null
+          updated_at?: string
+          updated_by?: string | null
+        }
+        Update: {
+          allow_edit_after_start?: boolean | null
+          allow_self_registration?: boolean | null
+          allow_technician_quotes?: boolean | null
+          app_logo_url?: string | null
+          app_name?: string
+          auto_backup_enabled?: boolean | null
+          background_color?: string | null
+          backup_frequency?: string | null
+          company_address?: string | null
+          company_email?: string | null
+          company_phone?: string | null
+          created_at?: string
+          custom_css?: string | null
+          default_currency?: string | null
+          default_language?: string | null
+          enable_2fa?: boolean | null
+          enable_email_notifications?: boolean | null
+          enable_in_app_notifications?: boolean | null
+          enable_reminders?: boolean | null
+          enable_sms_notifications?: boolean | null
+          enable_technician_rating?: boolean | null
+          erpnext_enabled?: boolean | null
+          erpnext_url?: string | null
+          google_maps_enabled?: boolean | null
+          id?: string
+          lock_sensitive_settings?: boolean | null
+          map_style?: string | null
+          max_execution_time?: number | null
+          notification_templates?: Json | null
+          notification_types?: Json | null
+          order_stages?: Json | null
+          primary_color?: string | null
+          require_manager_approval?: boolean | null
+          secondary_color?: string | null
+          session_timeout?: number | null
+          show_footer?: boolean | null
+          show_technicians_on_map?: boolean | null
+          smtp_from_email?: string | null
+          smtp_host?: string | null
+          smtp_password?: string | null
+          smtp_port?: number | null
+          smtp_username?: string | null
+          technician_statuses?: Json | null
+          theme_mode?: string | null
+          timezone?: string | null
+          updated_at?: string
+          updated_by?: string | null
+        }
+        Relationships: []
+      }
       appointments: {
         Row: {
           appointment_date: string
