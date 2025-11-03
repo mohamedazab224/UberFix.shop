@@ -138,22 +138,21 @@ export function PropertyForm({ skipNavigation = false, onSuccess }: PropertyForm
         throw new Error("يجب تسجيل الدخول أولاً");
       }
 
-      // إنشاء العقار مع حفظ إحداثيات الخريطة
+      // إنشاء العقار مع حفظ إحداثيات الخريطة (بدون region_id لأنه غير موجود في الجدول)
       const { error: insertError } = await supabase
         .from("properties")
         .insert([{
           name: data.name,
           type: data.type,
-          address: data.address || location?.address || null,
+          address: data.address || location?.address || '',
           area: data.area || null,
           rooms: data.rooms || null,
           description: data.description || null,
-          region_id: data.district_id || data.city_id || null,
           latitude: location?.latitude || null,
           longitude: location?.longitude || null,
           status: "active",
           manager_id: user.id,
-        } as any]);
+        }]);
 
       if (insertError) throw insertError;
 

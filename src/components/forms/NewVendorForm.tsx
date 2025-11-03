@@ -72,16 +72,38 @@ export const NewVendorForm = ({ onClose, onSuccess }: NewVendorFormProps) => {
 
     setIsSubmitting(true);
     try {
+      // جلب user_id لإنشاء profile أولاً
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) {
+        throw new Error("يجب تسجيل الدخول أولاً");
+      }
+
+      // إنشاء profile للمورد في جدول profiles أولاً
+      const { data: profileData, error: profileError } = await supabase
+        .from('profiles')
+        .insert([{
+          name: formData.name,
+          email: formData.email || `vendor_${Date.now()}@temp.com`,
+          role: 'technician',
+          phone: formData.phone || null,
+        }])
+        .select()
+        .single();
+
+      if (profileError) throw profileError;
+
+      // ثم إنشاء المورد في جدول vendors
       const { error } = await supabase
         .from('vendors')
         .insert([{
+          id: profileData.id, // استخدام نفس id من profiles
           name: formData.name,
           company_name: formData.company_name || null,
           specialization: formData.specialization,
           phone: formData.phone || null,
           email: formData.email || null,
           address: formData.address || null,
-          unit_rate: formData.unit_rate ? parseFloat(formData.unit_rate) : null,
+          hourly_rate: formData.unit_rate ? parseFloat(formData.unit_rate) : null,
           experience_years: formData.experience_years ? parseInt(formData.experience_years) : null,
           status: 'active'
         }]);

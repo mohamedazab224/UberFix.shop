@@ -81,12 +81,13 @@ export const GoogleMap: React.FC<GoogleMapProps> = ({
     try {
       setIsLoading(true);
       
+      // استخدام مكتبة places فقط لضمان التوافق الكامل
       const loader = new Loader({
         apiKey: apiKey,
         version: 'weekly',
-        libraries: ['places', 'marker'],
+        libraries: ['places'],
         language: 'ar',
-        region: 'SA'
+        region: 'EG'
       });
 
       const google = await loader.load();

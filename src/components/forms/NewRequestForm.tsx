@@ -115,7 +115,36 @@ export function NewRequestForm({ onSuccess, onCancel }: NewRequestFormProps) {
     setIsSubmitting(true);
     
     try {
-      // إعداد البيانات للإرسال
+      // التحقق من بيانات الشركة والفرع
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) {
+        throw new Error("يجب تسجيل الدخول أولاً");
+      }
+
+      // جلب بيانات المستخدم من profiles
+      const { data: profileData, error: profileError } = await supabase
+        .from('profiles')
+        .select('company_id')
+        .eq('id', user.id)
+        .single();
+
+      if (profileError || !profileData?.company_id) {
+        throw new Error("لا يوجد شركة مرتبطة بحسابك. يرجى التواصل مع الإدارة.");
+      }
+
+      // جلب أول فرع للشركة
+      const { data: branchData, error: branchError } = await supabase
+        .from('branches')
+        .select('id')
+        .eq('company_id', profileData.company_id)
+        .limit(1)
+        .single();
+
+      if (branchError || !branchData) {
+        throw new Error("لا يوجد فروع لشركتك. يرجى إضافة فرع أولاً.");
+      }
+
+      // إعداد البيانات للإرسال مع company_id و branch_id المطلوبين
       const { 
         property_id, 
         preferred_date, 
@@ -125,9 +154,14 @@ export function NewRequestForm({ onSuccess, onCancel }: NewRequestFormProps) {
         ...requestData 
       } = formData;
       
-      // لا نرسل property_id لأن الجدول لا يحتوي عليه
-      // نحفظ معلومات الموقع في حقل location فقط
-      const result = await createRequest(requestData);
+      const requestPayload = {
+        ...requestData,
+        company_id: profileData.company_id,
+        branch_id: branchData.id,
+        status: 'Open' as const
+      };
+      
+      const result = await createRequest(requestPayload);
       if (result) {
         // إنشاء حدث دورة حياة للطلب الجديد
         try {
