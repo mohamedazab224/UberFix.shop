@@ -230,16 +230,29 @@ export default function ServiceMap() {
       marker.addListener('click', () => {
         const infoDiv = document.createElement('div');
         const root = createRoot(infoDiv);
+        
+        let infoWindow: google.maps.InfoWindow | null = null;
+        
         root.render(
           <TechnicianInfoWindow
             name={tech.name}
             specialization={tech.specialization || 'فني صيانة'}
-            rating={5}
+            rating={tech.rating || 4.7}
             phone={tech.phone || ''}
+            email={tech.email || undefined}
+            status={tech.status === 'online' ? 'available' : 'busy'}
+            workingHours={tech.available_from && tech.available_to ? `${tech.available_from} - ${tech.available_to}` : '08:00 - 16:00'}
+            pricePerHour={tech.hourly_rate || 130}
+            serviceRadius={tech.service_area_radius || 10}
+            onClose={() => {
+              if (infoWindow) {
+                infoWindow.close();
+              }
+            }}
           />
         );
 
-        const infoWindow = new google.maps.InfoWindow({
+        infoWindow = new google.maps.InfoWindow({
           content: infoDiv
         });
         infoWindow.open(map, marker);
