@@ -1,0 +1,83 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Pin-Pro Icons Preview</title>
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<style>
+  body {
+    background:#f2f2f2; /* رمادي فاتح جدًا */
+    color:#111;
+    font-family:Arial, sans-serif;
+    margin:0;
+    padding:20px;
+    text-align:center;
+  }
+  h1 {
+    color:#111;
+    margin-bottom:20px;
+  }
+  button {
+    background:#f5bf23;
+    color:#111;
+    padding:10px 20px;
+    border:none;
+    border-radius:8px;
+    cursor:pointer;
+    font-weight:bold;
+    margin-bottom:20px;
+  }
+  .grid {
+    display:grid;
+    grid-template-columns:repeat(auto-fill,minmax(180px,1fr));
+    gap:25px;
+  }
+  .item {
+    background:#1a1a1a; /* نفس خلفية البطاقة السابقة */
+    border-radius:14px;
+    padding:15px;
+    box-shadow:0 0 10px rgba(0,0,0,0.5);
+    color:#f5bf23;
+  }
+  img {
+    width:140px;
+    height:140px;
+    object-fit:contain;
+    filter:drop-shadow(0 0 3px #f5bf23);
+    margin-bottom:10px;
+  }
+  p {
+    font-size:14px;
+    font-weight:bold;
+    color:#f5bf23;
+    margin:0;
+    word-break:break-all;
+  }
+</style>
+</head>
+<body>
+  <h1>Pin-Pro SVG Icons Preview</h1>
+  <button id="loadBtn">اختر المجلد</button>
+  <div class="grid" id="grid"></div>
+
+<script>
+document.getElementById('loadBtn').addEventListener('click', async () => {
+  try {
+    const dirHandle = await window.showDirectoryPicker();
+    const grid = document.getElementById('grid');
+    grid.innerHTML = '';
+    for await (const entry of dirHandle.values()) {
+      if (entry.kind === 'file' && entry.name.toLowerCase().endsWith('.svg')) {
+        const file = await entry.getFile();
+        const url = URL.createObjectURL(file);
+        const div = document.createElement('div');
+        div.className = 'item';
+        div.innerHTML = `<img src="${url}" alt=""><p>${entry.name}</p>`;
+        grid.appendChild(div);
+      }
+    }
+  } catch(e){ console.error(e); }
+});
+</script>
+</body>
+</html>
