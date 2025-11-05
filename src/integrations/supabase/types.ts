@@ -325,6 +325,66 @@ export type Database = {
           },
         ]
       }
+      branches2: {
+        Row: {
+          area: number | null
+          category: string | null
+          created_at: string | null
+          created_by: string | null
+          description: string | null
+          email: string | null
+          id: string
+          is_deleted: boolean | null
+          location: string | null
+          map_url: string | null
+          name: string
+          opening_date: string | null
+          phone: string | null
+          region_id: string | null
+          status: string | null
+          updated_at: string | null
+          updated_by: string | null
+        }
+        Insert: {
+          area?: number | null
+          category?: string | null
+          created_at?: string | null
+          created_by?: string | null
+          description?: string | null
+          email?: string | null
+          id?: string
+          is_deleted?: boolean | null
+          location?: string | null
+          map_url?: string | null
+          name: string
+          opening_date?: string | null
+          phone?: string | null
+          region_id?: string | null
+          status?: string | null
+          updated_at?: string | null
+          updated_by?: string | null
+        }
+        Update: {
+          area?: number | null
+          category?: string | null
+          created_at?: string | null
+          created_by?: string | null
+          description?: string | null
+          email?: string | null
+          id?: string
+          is_deleted?: boolean | null
+          location?: string | null
+          map_url?: string | null
+          name?: string
+          opening_date?: string | null
+          phone?: string | null
+          region_id?: string | null
+          status?: string | null
+          updated_at?: string | null
+          updated_by?: string | null
+        }
+        Relationships: []
+      }
       categories: {
         Row: {
           description: string | null
@@ -1922,6 +1982,36 @@ export type Database = {
           },
         ]
       }
+      specialization_icons: {
+        Row: {
+          color: string | null
+          icon_path: string
+          id: string
+          is_active: boolean | null
+          name: string
+          name_ar: string
+          sort_order: number | null
+        }
+        Insert: {
+          color?: string | null
+          icon_path: string
+          id?: string
+          is_active?: boolean | null
+          name: string
+          name_ar: string
+          sort_order?: number | null
+        }
+        Update: {
+          color?: string | null
+          icon_path?: string
+          id?: string
+          is_active?: boolean | null
+          name?: string
+          name_ar?: string
+          sort_order?: number | null
+        }
+        Relationships: []
+      }
       status_defs: {
         Row: {
           label_ar: string | null
@@ -2080,6 +2170,131 @@ export type Database = {
           setting_key?: string
           setting_value?: Json
           updated_at?: string
+        }
+        Relationships: []
+      }
+      technician_reviews: {
+        Row: {
+          created_at: string | null
+          customer_id: string | null
+          customer_name: string
+          id: string
+          rating: number
+          review_text: string | null
+          service_request_id: string | null
+          technician_id: string
+          updated_at: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          customer_id?: string | null
+          customer_name: string
+          id?: string
+          rating: number
+          review_text?: string | null
+          service_request_id?: string | null
+          technician_id: string
+          updated_at?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          customer_id?: string | null
+          customer_name?: string
+          id?: string
+          rating?: number
+          review_text?: string | null
+          service_request_id?: string | null
+          technician_id?: string
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "technician_reviews_technician_id_fkey"
+            columns: ["technician_id"]
+            isOneToOne: false
+            referencedRelation: "technicians"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      technicians: {
+        Row: {
+          available_from: string | null
+          available_to: string | null
+          bio: string | null
+          certifications: Json | null
+          company_id: string | null
+          created_at: string | null
+          created_by: string | null
+          current_latitude: number | null
+          current_longitude: number | null
+          email: string | null
+          hourly_rate: number | null
+          id: string
+          is_active: boolean | null
+          is_verified: boolean | null
+          location_updated_at: string | null
+          name: string
+          phone: string | null
+          profile_image: string | null
+          rating: number | null
+          service_area_radius: number | null
+          specialization: string
+          status: string | null
+          total_reviews: number | null
+          updated_at: string | null
+        }
+        Insert: {
+          available_from?: string | null
+          available_to?: string | null
+          bio?: string | null
+          certifications?: Json | null
+          company_id?: string | null
+          created_at?: string | null
+          created_by?: string | null
+          current_latitude?: number | null
+          current_longitude?: number | null
+          email?: string | null
+          hourly_rate?: number | null
+          id?: string
+          is_active?: boolean | null
+          is_verified?: boolean | null
+          location_updated_at?: string | null
+          name: string
+          phone?: string | null
+          profile_image?: string | null
+          rating?: number | null
+          service_area_radius?: number | null
+          specialization: string
+          status?: string | null
+          total_reviews?: number | null
+          updated_at?: string | null
+        }
+        Update: {
+          available_from?: string | null
+          available_to?: string | null
+          bio?: string | null
+          certifications?: Json | null
+          company_id?: string | null
+          created_at?: string | null
+          created_by?: string | null
+          current_latitude?: number | null
+          current_longitude?: number | null
+          email?: string | null
+          hourly_rate?: number | null
+          id?: string
+          is_active?: boolean | null
+          is_verified?: boolean | null
+          location_updated_at?: string | null
+          name?: string
+          phone?: string | null
+          profile_image?: string | null
+          rating?: number | null
+          service_area_radius?: number | null
+          specialization?: string
+          status?: string | null
+          total_reviews?: number | null
+          updated_at?: string | null
         }
         Relationships: []
       }
