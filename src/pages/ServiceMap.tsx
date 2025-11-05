@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef } from 'react';
 import { createRoot } from 'react-dom/client';
-import { Loader } from '@googlemaps/js-api-loader';
+import { loadGoogleMaps } from '@/lib/googleMapsLoader';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
@@ -98,15 +98,7 @@ export default function ServiceMap() {
 
   const initializeMap = async () => {
     try {
-      const loader = new Loader({
-        apiKey: apiKey,
-        version: 'weekly',
-        libraries: ['places'],
-        language: 'ar',
-        region: 'EG'
-      });
-
-      await loader.load();
+      await loadGoogleMaps(apiKey);
       
       const mapInstance = new google.maps.Map(mapRef.current!, {
         center: { lat: 30.0444, lng: 31.2357 }, // القاهرة

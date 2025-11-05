@@ -1,5 +1,5 @@
 import React, { useEffect, useRef, useState } from 'react';
-import { Loader } from '@googlemaps/js-api-loader';
+import { loadGoogleMaps } from '@/lib/googleMapsLoader';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -114,16 +114,8 @@ export const GoogleMap: React.FC<GoogleMapProps> = ({
       setIsLoading(true);
       console.log('🗺️ Initializing Google Maps...');
       
-      const loader = new Loader({
-        apiKey: apiKey,
-        version: 'weekly',
-        libraries: ['places', 'geometry'],
-        language: 'ar',
-        region: 'EG'
-      });
-
       console.log('📦 Loading Google Maps API...');
-      await loader.load();
+      await loadGoogleMaps(apiKey);
       console.log('✅ Google Maps API loaded successfully');
       
       const mapInstance = new google.maps.Map(mapRef.current!, {
