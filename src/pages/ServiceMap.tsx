@@ -19,6 +19,7 @@ import { useTechnicians, Technician } from '@/hooks/useTechnicians';
 import { TechnicianMarkerInfo } from '@/components/maps/TechnicianMarkerInfo';
 import { TechnicianInfoWindow } from '@/components/maps/TechnicianInfoWindow';
 import { BranchInfoWindow } from '@/components/maps/BranchInfoWindow';
+import { ServiceRequestDialog } from '@/components/maps/ServiceRequestDialog';
 import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
 import { getCachedApiKey, setCachedApiKey } from '@/lib/mapsCache';
@@ -34,6 +35,8 @@ export default function ServiceMap() {
   const [selectedTechnician, setSelectedTechnician] = useState<Technician | null>(null);
   const [userLocation, setUserLocation] = useState<{ lat: number; lng: number; address?: string } | null>(null);
   const [markers, setMarkers] = useState<google.maps.Marker[]>([]);
+  const [currentInfoWindow, setCurrentInfoWindow] = useState<google.maps.InfoWindow | null>(null);
+  const [showServiceRequest, setShowServiceRequest] = useState(false);
   
   const { branches, loading: branchesLoading, refetch: refetchBranches } = useBranches2();
   const { technicians, specializationIcons, loading: techniciansLoading, refetch: refetchTechnicians } = useTechnicians();
@@ -228,14 +231,29 @@ export default function ServiceMap() {
       });
 
       marker.addListener('click', () => {
+        // Close previous info window
+        if (currentInfoWindow) {
+          currentInfoWindow.close();
+        }
+
         const infoDiv = document.createElement('div');
         const root = createRoot(infoDiv);
+        
+        const handleRequestService = () => {
+          setSelectedTechnician(tech);
+          setShowServiceRequest(true);
+          if (currentInfoWindow) {
+            currentInfoWindow.close();
+          }
+        };
+
         root.render(
           <TechnicianInfoWindow
             name={tech.name}
             specialization={tech.specialization || 'فني صيانة'}
             rating={5}
             phone={tech.phone || ''}
+            onRequestService={handleRequestService}
           />
         );
 
@@ -243,8 +261,8 @@ export default function ServiceMap() {
           content: infoDiv
         });
         infoWindow.open(map, marker);
+        setCurrentInfoWindow(infoWindow);
         
-        setSelectedTechnician(tech);
         setSelectedBranch(null);
         map.panTo(position);
         map.setZoom(15);
@@ -469,51 +487,17 @@ export default function ServiceMap() {
           </Button>
         </div>
 
-        {/* Selected Technician Info */}
-        {selectedTechnician && (
-          <div className="absolute top-4 left-1/2 -translate-x-1/2 z-20 max-w-md">
-            <TechnicianMarkerInfo
-              technician={selectedTechnician}
-              onRequestService={handleRequestService}
-              onClose={() => setSelectedTechnician(null)}
+        {/* Service Request Dialog */}
+        {showServiceRequest && selectedTechnician && (
+          <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 z-30">
+            <ServiceRequestDialog
+              technicianId={selectedTechnician.id}
+              technicianName={selectedTechnician.name}
+              onClose={() => {
+                setShowServiceRequest(false);
+                setSelectedTechnician(null);
+              }}
             />
-          </div>
-        )}
-
-        {/* Selected Branch Info */}
-        {selectedBranch && (
-          <div className="absolute top-4 left-1/2 -translate-x-1/2 z-20 max-w-md">
-            <Card className="w-80 shadow-xl">
-              <div className="p-4">
-                <div className="flex items-start justify-between mb-3">
-                  <div>
-                    <h3 className="font-bold text-lg">{selectedBranch.name}</h3>
-                    {selectedBranch.description && (
-                      <p className="text-sm text-muted-foreground mt-1">{selectedBranch.description}</p>
-                    )}
-                  </div>
-                  <Button
-                    size="sm"
-                    variant="ghost"
-                    onClick={() => setSelectedBranch(null)}
-                  >
-                    ✕
-                  </Button>
-                </div>
-                
-                {selectedBranch.location && (
-                  <p className="text-sm text-muted-foreground mb-2">📍 {selectedBranch.location}</p>
-                )}
-                
-                {selectedBranch.phone && (
-                  <p className="text-sm">📞 {selectedBranch.phone}</p>
-                )}
-                
-                {selectedBranch.email && (
-                  <p className="text-sm">✉️ {selectedBranch.email}</p>
-                )}
-              </div>
-            </Card>
           </div>
         )}
 

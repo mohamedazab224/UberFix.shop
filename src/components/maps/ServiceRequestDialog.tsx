@@ -1,206 +1,136 @@
 import { useState } from 'react';
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
-import { Textarea } from '@/components/ui/textarea';
 import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
+import { Textarea } from '@/components/ui/textarea';
 import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
-import { Loader2 } from 'lucide-react';
 
 interface ServiceRequestDialogProps {
-  open: boolean;
-  onOpenChange: (open: boolean) => void;
-  vendorId: string;
-  vendorName: string;
-  userLocation?: { lat: number; lng: number; address?: string };
+  technicianId: string;
+  technicianName: string;
+  onClose: () => void;
 }
 
-export const ServiceRequestDialog = ({
-  open,
-  onOpenChange,
-  vendorId,
-  vendorName,
-  userLocation
+export const ServiceRequestDialog = ({ 
+  technicianId, 
+  technicianName,
+  onClose 
 }: ServiceRequestDialogProps) => {
-  const [title, setTitle] = useState('');
-  const [description, setDescription] = useState('');
+  const [name, setName] = useState('');
   const [phone, setPhone] = useState('');
-  const [submitting, setSubmitting] = useState(false);
+  const [description, setDescription] = useState('');
+  const [loading, setLoading] = useState(false);
   const { toast } = useToast();
 
-  const handleSubmit = async () => {
-    if (!title.trim() || !description.trim() || !phone.trim()) {
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    
+    if (!name || !phone || !description) {
       toast({
-        title: 'بيانات ناقصة',
-        description: 'يرجى ملء جميع الحقول المطلوبة',
+        title: 'خطأ',
+        description: 'الرجاء ملء جميع الحقول',
         variant: 'destructive'
       });
       return;
     }
 
-    setSubmitting(true);
+    setLoading(true);
+
     try {
-      const { data: { user } } = await supabase.auth.getUser();
-      
-      if (!user) {
-        toast({
-          title: 'غير مصرح',
-          description: 'يجب تسجيل الدخول أولاً',
-          variant: 'destructive'
-        });
-        return;
-      }
-
-      // Get user's company_id from profile
-      const { data: profile } = await supabase
-        .from('profiles')
-        .select('company_id')
-        .eq('id', user.id)
-        .single();
-
-      if (!profile?.company_id) {
-        toast({
-          title: 'خطأ',
-          description: 'لم يتم العثور على معلومات الشركة',
-          variant: 'destructive'
-        });
-        return;
-      }
-
-      // Get a default branch for this company
-      const { data: branch } = await supabase
-        .from('branches')
-        .select('id')
-        .eq('company_id', profile.company_id)
-        .limit(1)
-        .single();
-
-      if (!branch) {
-        toast({
-          title: 'خطأ',
-          description: 'لم يتم العثور على فرع للشركة',
-          variant: 'destructive'
-        });
-        return;
-      }
-
-      const requestData = {
-        title: title.trim(),
-        description: description.trim(),
-        assigned_vendor_id: vendorId,
-        client_phone: phone.trim(),
-        client_name: user.email || 'عميل',
-        status: 'Open' as const,
-        priority: 'medium',
-        workflow_stage: 'submitted',
-        created_by: user.id,
-        company_id: profile.company_id,
-        branch_id: branch.id,
-        location: userLocation?.address || '',
-      };
-
       const { error } = await supabase
         .from('maintenance_requests')
-        .insert([requestData]);
+        .insert([{
+          title: `طلب خدمة من ${name}`,
+          client_name: name,
+          client_phone: phone,
+          description: description,
+          branch_id: '00000000-0000-0000-0000-000000000000',
+          company_id: '00000000-0000-0000-0000-000000000000',
+          status: 'Open',
+          priority: 'normal'
+        }]);
 
       if (error) throw error;
 
       toast({
-        title: 'تم الإرسال بنجاح',
-        description: `تم إرسال طلبك إلى ${vendorName}`,
+        title: 'تم إرسال الطلب',
+        description: `تم إرسال طلبك إلى ${technicianName} بنجاح`,
       });
 
-      // Reset form
-      setTitle('');
-      setDescription('');
-      setPhone('');
-      onOpenChange(false);
-      
+      onClose();
     } catch (error) {
-      console.error('Error creating request:', error);
+      console.error('Error submitting request:', error);
       toast({
         title: 'خطأ',
-        description: 'فشل إرسال الطلب. حاول مرة أخرى.',
+        description: 'فشل إرسال الطلب، الرجاء المحاولة مرة أخرى',
         variant: 'destructive'
       });
     } finally {
-      setSubmitting(false);
+      setLoading(false);
     }
   };
 
   return (
-    <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-md">
-        <DialogHeader>
-          <DialogTitle>طلب خدمة من {vendorName}</DialogTitle>
-        </DialogHeader>
-        
-        <div className="space-y-4 py-4">
-          <div className="space-y-2">
-            <Label htmlFor="title">عنوان الطلب *</Label>
-            <Input
-              id="title"
-              placeholder="مثال: صيانة تكييف"
-              value={title}
-              onChange={(e) => setTitle(e.target.value)}
-            />
-          </div>
-
-          <div className="space-y-2">
-            <Label htmlFor="description">وصف المشكلة *</Label>
-            <Textarea
-              id="description"
-              placeholder="اشرح المشكلة بالتفصيل..."
-              value={description}
-              onChange={(e) => setDescription(e.target.value)}
-              rows={4}
-            />
-          </div>
-
-          <div className="space-y-2">
-            <Label htmlFor="phone">رقم الهاتف *</Label>
-            <Input
-              id="phone"
-              type="tel"
-              placeholder="01XXXXXXXXX"
-              value={phone}
-              onChange={(e) => setPhone(e.target.value)}
-            />
-          </div>
-
-          {userLocation?.address && (
-            <div className="space-y-2">
-              <Label>الموقع</Label>
-              <p className="text-sm text-muted-foreground">{userLocation.address}</p>
-            </div>
-          )}
+    <div className="bg-white rounded-lg p-4 shadow-xl w-80" style={{ fontFamily: 'Arial, sans-serif' }}>
+      <div className="flex items-center justify-between mb-4">
+        <h3 className="font-bold text-lg text-gray-900">طلب خدمة من {technicianName}</h3>
+        <button 
+          onClick={onClose}
+          className="text-gray-500 hover:text-gray-700 text-xl leading-none"
+        >
+          ×
+        </button>
+      </div>
+      
+      <form onSubmit={handleSubmit} className="space-y-3">
+        <div>
+          <Input
+            placeholder="الاسم"
+            value={name}
+            onChange={(e) => setName(e.target.value)}
+            className="w-full"
+            required
+          />
         </div>
-
+        
+        <div>
+          <Input
+            placeholder="رقم الهاتف"
+            value={phone}
+            onChange={(e) => setPhone(e.target.value)}
+            className="w-full"
+            required
+          />
+        </div>
+        
+        <div>
+          <Textarea
+            placeholder="وصف المشكلة..."
+            value={description}
+            onChange={(e) => setDescription(e.target.value)}
+            className="w-full min-h-[80px]"
+            required
+          />
+        </div>
+        
         <div className="flex gap-2">
-          <Button 
-            onClick={handleSubmit} 
-            disabled={submitting}
-            className="flex-1"
+          <Button
+            type="submit"
+            className="flex-1 bg-yellow-400 hover:bg-yellow-500 text-gray-900 font-semibold"
+            disabled={loading}
           >
-            {submitting ? (
-              <>
-                <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                جاري الإرسال...
-              </>
-            ) : (
-              'إرسال الطلب'
-            )}
+            {loading ? 'جاري الإرسال...' : 'إرسال الطلب'}
           </Button>
-          <Button 
-            onClick={() => onOpenChange(false)} 
+          <Button
+            type="button"
             variant="outline"
-            disabled={submitting}
+            onClick={onClose}
+            className="flex-1"
           >
             إلغاء
           </Button>
         </div>
-      </DialogContent>
-    </Dialog>
+      </form>
+    </div>
   );
 };
