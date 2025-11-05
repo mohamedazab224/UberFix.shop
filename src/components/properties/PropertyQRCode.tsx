@@ -44,9 +44,9 @@ export function PropertyQRCode({ propertyId, propertyName }: PropertyQRCodeProps
   return (
     <Dialog open={isOpen} onOpenChange={setIsOpen}>
       <DialogTrigger asChild>
-        <Button variant="outline" size="sm">
-          <QrCode className="ml-2 h-4 w-4" />
-          رمز QR
+        <Button variant="outline" className="w-full justify-start gap-3 h-12">
+          <QrCode className="h-4 w-4" />
+          رمز QR للعقار
         </Button>
       </DialogTrigger>
       <DialogContent className="sm:max-w-md">

@@ -6,8 +6,10 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
-import { Building2, Edit, Plus, Wrench, Trash2, X } from "lucide-react";
+import { Building2, Edit, Plus, Wrench, Trash2, X, QrCode } from "lucide-react";
 import { useNavigate } from "react-router-dom";
+import { NewRequestFormDialog } from "@/components/forms/NewRequestFormDialog";
+import { PropertyQRCode } from "./PropertyQRCode";
 
 interface PropertyActionsDialogProps {
   propertyId: string;
@@ -23,6 +25,8 @@ export function PropertyActionsDialog({
   onOpenChange,
 }: PropertyActionsDialogProps) {
   const navigate = useNavigate();
+  const [showRequestDialog, setShowRequestDialog] = useState(false);
+  const [showQRCode, setShowQRCode] = useState(false);
 
   const handleEditProperty = () => {
     navigate(`/properties/edit/${propertyId}`);
@@ -30,18 +34,15 @@ export function PropertyActionsDialog({
   };
 
   const handleNewMaintenanceRequest = () => {
-    navigate(`/quick-request/${propertyId}`);
-    onOpenChange(false);
+    setShowRequestDialog(true);
   };
 
   const handleAddSubProperty = () => {
-    // Navigate to add sub-property page
     navigate(`/properties/add?parent=${propertyId}`);
     onOpenChange(false);
   };
 
   const handleArchiveProperty = () => {
-    // Handle property archiving
     onOpenChange(false);
   };
 
@@ -101,6 +102,8 @@ export function PropertyActionsDialog({
               <span>طلب صيانة جديد</span>
             </Button>
 
+            <PropertyQRCode propertyId={propertyId} propertyName={propertyName} />
+
             <Button
               variant="outline"
               className="w-full justify-start gap-3 h-12 text-destructive hover:bg-destructive/10"
@@ -112,6 +115,15 @@ export function PropertyActionsDialog({
           </div>
         </div>
       </DialogContent>
+
+      {/* Dialog لطلب الصيانة */}
+      <NewRequestFormDialog
+        trigger={<></>}
+        onSuccess={() => {
+          setShowRequestDialog(false);
+          onOpenChange(false);
+        }}
+      />
     </Dialog>
   );
 }
