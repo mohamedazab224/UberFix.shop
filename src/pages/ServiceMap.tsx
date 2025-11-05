@@ -39,7 +39,6 @@ export default function ServiceMap() {
   const [userLocation, setUserLocation] = useState<{ lat: number; lng: number; address?: string } | null>(null);
   const [markers, setMarkers] = useState<google.maps.Marker[]>([]);
   const [currentInfoWindow, setCurrentInfoWindow] = useState<google.maps.InfoWindow | null>(null);
-  const [showServiceRequest, setShowServiceRequest] = useState(false);
   const [maxDistance, setMaxDistance] = useState<number | undefined>(undefined);
   
   const { branches, loading: branchesLoading, refetch: refetchBranches } = useBranches2();
@@ -274,14 +273,6 @@ export default function ServiceMap() {
         const infoDiv = document.createElement('div');
         const root = createRoot(infoDiv);
         
-        const handleRequestService = () => {
-          setSelectedTechnician(tech);
-          setShowServiceRequest(true);
-          if (currentInfoWindow) {
-            currentInfoWindow.close();
-          }
-        };
-
         // Get distance from tech object if available
         const distance = tech.distance;
 
@@ -292,7 +283,10 @@ export default function ServiceMap() {
             rating={5}
             phone={tech.phone || ''}
             distance={distance}
-            onRequestService={handleRequestService}
+            technicianId={tech.id}
+            onRequestSent={() => {
+              console.log('Request sent successfully');
+            }}
           />
         );
 
@@ -545,19 +539,6 @@ export default function ServiceMap() {
           </Button>
         </div>
 
-        {/* Service Request Dialog */}
-        {showServiceRequest && selectedTechnician && (
-          <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 z-30">
-            <ServiceRequestDialog
-              technicianId={selectedTechnician.id}
-              technicianName={selectedTechnician.name}
-              onClose={() => {
-                setShowServiceRequest(false);
-                setSelectedTechnician(null);
-              }}
-            />
-          </div>
-        )}
 
         {loading && (
           <div className="absolute inset-0 flex items-center justify-center bg-background/80 z-30">
