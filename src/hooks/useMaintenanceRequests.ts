@@ -114,68 +114,39 @@ export function useMaintenanceRequests() {
         throw new Error("يجب تسجيل الدخول أولاً");
       }
       
-      // الحصول على company_id و branch_id من ملف المستخدم
-      const { data: profile } = await supabase
+      // جلب company_id و branch_id من profile المستخدم
+      // الآن كل مستخدم لديه company و branch تلقائياً
+      const { data: profile, error: profileError } = await supabase
         .from('profiles')
         .select('company_id')
         .eq('id', user.id)
         .single();
       
-      // إذا لم يكن للمستخدم company_id، نستخدم قيمة افتراضية
-      let company_id = profile?.company_id;
-      if (!company_id) {
-        // إنشاء company جديدة للمستخدم
-        const { data: newCompany } = await supabase
-          .from('companies')
-          .insert({ 
-            name: 'شركة افتراضية',
-            created_by: user.id 
-          })
-          .select('id')
-          .single();
-        
-        if (newCompany) {
-          company_id = newCompany.id;
-          // تحديث profile المستخدم
-          await supabase
-            .from('profiles')
-            .update({ company_id: newCompany.id })
-            .eq('id', user.id);
-        }
+      if (profileError || !profile?.company_id) {
+        throw new Error("حدث خطأ في جلب بيانات المستخدم. يرجى تسجيل الخروج والدخول مرة أخرى.");
       }
       
-      // الحصول على أول فرع أو إنشاء فرع جديد
-      let { data: branches } = await supabase
+      // جلب أول فرع للشركة
+      const { data: branch, error: branchError } = await supabase
         .from('branches')
         .select('id')
-        .eq('company_id', company_id)
-        .limit(1);
+        .eq('company_id', profile.company_id)
+        .limit(1)
+        .single();
       
-      let branch_id = branches?.[0]?.id;
-      if (!branch_id && company_id) {
-        const { data: newBranch } = await supabase
-          .from('branches')
-          .insert({
-            company_id: company_id,
-            name: 'الفرع الرئيسي',
-            created_by: user.id
-          })
-          .select('id')
-          .single();
-        
-        if (newBranch) {
-          branch_id = newBranch.id;
-        }
+      if (branchError || !branch) {
+        throw new Error("حدث خطأ في جلب بيانات الفرع. يرجى تسجيل الخروج والدخول مرة أخرى.");
       }
       
+      // إنشاء الطلب
       const { data, error } = await supabase
         .from('maintenance_requests')
         .insert({
           ...requestData,
           created_by: user.id,
           status: 'Open',
-          company_id: company_id,
-          branch_id: branch_id
+          company_id: profile.company_id,
+          branch_id: branch.id
         })
         .select()
         .single();
