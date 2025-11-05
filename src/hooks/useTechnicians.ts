@@ -90,6 +90,23 @@ export const useTechnicians = (filter?: { status?: string; specialization?: stri
   useEffect(() => {
     fetchTechnicians();
     fetchSpecializationIcons();
+
+    // إضافة realtime subscription
+    const channel = supabase
+      .channel('technicians-changes')
+      .on('postgres_changes', 
+        { event: '*', schema: 'public', table: 'technicians' },
+        () => {
+          console.log('🔄 Technicians changed, refetching...');
+          fetchTechnicians();
+        }
+      )
+      .subscribe();
+
+    return () => {
+      console.log('🧹 Cleaning up technicians subscription');
+      supabase.removeChannel(channel);
+    };
   }, [filter?.status, filter?.specialization]);
 
   return {

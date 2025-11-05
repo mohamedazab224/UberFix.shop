@@ -54,6 +54,23 @@ export const useBranches2 = () => {
 
   useEffect(() => {
     fetchBranches();
+
+    // إضافة realtime subscription
+    const channel = supabase
+      .channel('branches2-changes')
+      .on('postgres_changes', 
+        { event: '*', schema: 'public', table: 'branches2' },
+        () => {
+          console.log('🔄 Branches changed, refetching...');
+          fetchBranches();
+        }
+      )
+      .subscribe();
+
+    return () => {
+      console.log('🧹 Cleaning up branches subscription');
+      supabase.removeChannel(channel);
+    };
   }, []);
 
   return {

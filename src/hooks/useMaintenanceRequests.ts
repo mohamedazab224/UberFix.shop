@@ -267,6 +267,23 @@ export function useMaintenanceRequests() {
 
   useEffect(() => {
     fetchRequests();
+
+    // إضافة realtime subscription
+    const channel = supabase
+      .channel('maintenance-requests-changes')
+      .on('postgres_changes', 
+        { event: '*', schema: 'public', table: 'maintenance_requests' },
+        () => {
+          console.log('🔄 Maintenance requests changed, refetching...');
+          fetchRequests();
+        }
+      )
+      .subscribe();
+
+    return () => {
+      console.log('🧹 Cleaning up maintenance requests subscription');
+      supabase.removeChannel(channel);
+    };
   }, []);
 
   return {

@@ -55,6 +55,11 @@ export default function ServiceMap() {
     if (map && (branches.length > 0 || technicians.length > 0)) {
       updateMarkers();
     }
+
+    // تنظيف العلامات عند إلغاء التثبيت
+    return () => {
+      markers.forEach(marker => marker.setMap(null));
+    };
   }, [map, branches, technicians, selectedSpecialization]);
 
   const fetchApiKey = async () => {
