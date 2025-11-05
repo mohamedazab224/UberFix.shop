@@ -26,6 +26,7 @@ import Invoices from "./pages/Invoices";
 import Map from "./pages/Map";
 import PropertiesMap from "./pages/PropertiesMap";
 import ServiceMap from "./pages/ServiceMap";
+import EmergencyService from "./pages/EmergencyService";
 import Documentation from "./pages/Documentation";
 import UserGuide from "./pages/UserGuide";
 import FAQ from "./pages/FAQ";
@@ -215,6 +216,12 @@ const App = () => {
                 <Route path="/service-map" element={
                   <AuthWrapper>
                     <ServiceMap />
+                  </AuthWrapper>
+                } />
+                
+                <Route path="/emergency-service/:technicianId" element={
+                  <AuthWrapper>
+                    <EmergencyService />
                   </AuthWrapper>
                 } />
                 

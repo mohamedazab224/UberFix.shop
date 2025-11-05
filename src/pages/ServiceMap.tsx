@@ -17,7 +17,7 @@ import {
 import { useBranches2, Branch2 } from '@/hooks/useBranches2';
 import { useTechnicians, Technician } from '@/hooks/useTechnicians';
 
-import { TechnicianInfoWindow } from '@/components/maps/TechnicianInfoWindow';
+import { SimpleServiceCard } from '@/components/maps/SimpleServiceCard';
 import { BranchInfoWindow } from '@/components/maps/BranchInfoWindow';
 import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
@@ -164,9 +164,10 @@ export default function ServiceMap() {
         title: branch.name,
         icon: {
           url: branchIcon.icon,
-          scaledSize: new google.maps.Size(50, 60),
-          anchor: new google.maps.Point(25, 60),
+          scaledSize: new google.maps.Size(80, 96),
+          anchor: new google.maps.Point(40, 96),
         },
+        optimized: false,
         animation: google.maps.Animation.DROP,
       });
 
@@ -218,9 +219,10 @@ export default function ServiceMap() {
         title: tech.name,
         icon: {
           url: iconUrl,
-          scaledSize: new google.maps.Size(50, 60),
-          anchor: new google.maps.Point(25, 60),
+          scaledSize: new google.maps.Size(80, 96),
+          anchor: new google.maps.Point(40, 96),
         },
+        optimized: false,
         animation: google.maps.Animation.DROP,
       });
 
@@ -231,16 +233,12 @@ export default function ServiceMap() {
         let infoWindow: google.maps.InfoWindow | null = null;
         
         root.render(
-          <TechnicianInfoWindow
+          <SimpleServiceCard
+            technicianId={tech.id}
             name={tech.name}
             specialization={tech.specialization || 'فني صيانة'}
             rating={tech.rating || 4.7}
-            phone={tech.phone || ''}
-            email={tech.email || undefined}
             status={tech.status === 'online' ? 'available' : 'busy'}
-            workingHours={tech.available_from && tech.available_to ? `${tech.available_from} - ${tech.available_to}` : '08:00 - 16:00'}
-            pricePerHour={tech.hourly_rate || 130}
-            serviceRadius={tech.service_area_radius || 10}
             onClose={() => {
               if (infoWindow) {
                 infoWindow.close();
@@ -250,7 +248,8 @@ export default function ServiceMap() {
         );
 
         infoWindow = new google.maps.InfoWindow({
-          content: infoDiv
+          content: infoDiv,
+          disableAutoPan: false,
         });
         infoWindow.open(map, marker);
         
