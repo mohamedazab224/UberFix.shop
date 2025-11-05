@@ -8,38 +8,35 @@ import {
   Search, 
   Navigation, 
   RefreshCw, 
-  Map as MapIcon, 
-  List,
-  Wrench,
   ZoomIn,
-  ZoomOut
+  ZoomOut,
+  Store,
+  Users
 } from 'lucide-react';
-import { useVendorLocations, VendorLocation } from '@/hooks/useVendorLocations';
-import { useServices } from '@/hooks/useServices';
-import { VendorMarkerInfo } from '@/components/maps/VendorMarkerInfo';
-import { ServiceRequestDialog } from '@/components/maps/ServiceRequestDialog';
+import { useBranches2, Branch2 } from '@/hooks/useBranches2';
+import { useTechnicians, Technician } from '@/hooks/useTechnicians';
+import { TechnicianMarkerInfo } from '@/components/maps/TechnicianMarkerInfo';
 import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
-import { cn } from '@/lib/utils';
 import { getCachedApiKey, setCachedApiKey } from '@/lib/mapsCache';
+import { getBranchIcon, getTechnicianIcon } from '@/utils/mapIconHelper';
 
 export default function ServiceMap() {
   const mapRef = useRef<HTMLDivElement>(null);
   const [map, setMap] = useState<google.maps.Map | null>(null);
   const [apiKey, setApiKey] = useState('');
   const [searchQuery, setSearchQuery] = useState('');
-  const [selectedService, setSelectedService] = useState<string | undefined>();
-  const [viewMode, setViewMode] = useState<'map' | 'list'>('map');
-  const [selectedVendor, setSelectedVendor] = useState<VendorLocation | null>(null);
-  const [requestDialogOpen, setRequestDialogOpen] = useState(false);
-  const [requestVendor, setRequestVendor] = useState<{ id: string; name: string } | null>(null);
+  const [selectedSpecialization, setSelectedSpecialization] = useState<string | undefined>();
+  const [selectedBranch, setSelectedBranch] = useState<Branch2 | null>(null);
+  const [selectedTechnician, setSelectedTechnician] = useState<Technician | null>(null);
   const [userLocation, setUserLocation] = useState<{ lat: number; lng: number; address?: string } | null>(null);
   const [markers, setMarkers] = useState<google.maps.marker.AdvancedMarkerElement[]>([]);
-  const [infoWindow, setInfoWindow] = useState<HTMLDivElement | null>(null);
   
-  const { locations, loading, refetch } = useVendorLocations(selectedService);
-  const { categories, services } = useServices();
+  const { branches, loading: branchesLoading, refetch: refetchBranches } = useBranches2();
+  const { technicians, specializationIcons, loading: techniciansLoading, refetch: refetchTechnicians } = useTechnicians();
   const { toast } = useToast();
+  
+  const loading = branchesLoading || techniciansLoading;
 
   useEffect(() => {
     fetchApiKey();
@@ -52,10 +49,10 @@ export default function ServiceMap() {
   }, [apiKey]);
 
   useEffect(() => {
-    if (map && locations.length > 0) {
+    if (map && (branches.length > 0 || technicians.length > 0)) {
       updateMarkers();
     }
-  }, [map, locations]);
+  }, [map, branches, technicians, selectedSpecialization]);
 
   const fetchApiKey = async () => {
     try {
@@ -141,15 +138,89 @@ export default function ServiceMap() {
     const newMarkers: google.maps.marker.AdvancedMarkerElement[] = [];
     const bounds = new google.maps.LatLngBounds();
 
-    locations.forEach((location) => {
-      const position = { lat: location.latitude, lng: location.longitude };
+    // Add branch markers (from branches2)
+    branches.forEach((branch) => {
+      // Parse location from map_url or skip if no coordinates
+      if (!branch.map_url) return;
       
-      // Create custom marker content
+      const coords = parseMapUrl(branch.map_url);
+      if (!coords) return;
+
+      const position = { lat: coords.lat, lng: coords.lng };
+      const { icon, color } = getBranchIcon();
+      
+      // Create custom marker for branch
       const markerContent = document.createElement('div');
       markerContent.className = 'custom-marker';
       markerContent.innerHTML = `
         <div style="
-          background: linear-gradient(135deg, #f5bf23 0%, #d4af37 100%);
+          background: linear-gradient(135deg, ${color} 0%, ${color}dd 100%);
+          border: 3px solid white;
+          border-radius: 50%;
+          width: 48px;
+          height: 48px;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          box-shadow: 0 4px 12px rgba(0,0,0,0.3);
+          cursor: pointer;
+          transition: transform 0.2s;
+        ">
+          <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2">
+            <path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/>
+            <polyline points="9 22 9 12 15 12 15 22"/>
+          </svg>
+        </div>
+      `;
+
+      markerContent.addEventListener('mouseenter', () => {
+        markerContent.style.transform = 'scale(1.1)';
+      });
+
+      markerContent.addEventListener('mouseleave', () => {
+        markerContent.style.transform = 'scale(1)';
+      });
+
+      const marker = new google.maps.marker.AdvancedMarkerElement({
+        map,
+        position,
+        content: markerContent,
+        title: branch.name
+      });
+
+      marker.addListener('click', () => {
+        setSelectedBranch(branch);
+        setSelectedTechnician(null);
+        map.panTo(position);
+        map.setZoom(15);
+      });
+
+      newMarkers.push(marker);
+      bounds.extend(position);
+    });
+
+    // Add technician markers
+    const filteredTechs = selectedSpecialization 
+      ? technicians.filter(t => t.specialization === selectedSpecialization)
+      : technicians;
+
+    filteredTechs.forEach((tech) => {
+      if (!tech.current_latitude || !tech.current_longitude) return;
+      
+      const position = { lat: tech.current_latitude, lng: tech.current_longitude };
+      
+      // Get icon from specialization_icons or fallback
+      const specIcon = specializationIcons.find(s => s.name === tech.specialization || s.name_ar === tech.specialization);
+      const { icon, color } = specIcon 
+        ? { icon: specIcon.icon_path, color: specIcon.color }
+        : getTechnicianIcon(tech.specialization);
+      
+      // Create custom marker for technician
+      const markerContent = document.createElement('div');
+      markerContent.className = 'custom-marker';
+      markerContent.innerHTML = `
+        <div style="
+          background: linear-gradient(135deg, ${color} 0%, ${color}dd 100%);
           border: 3px solid white;
           border-radius: 50%;
           width: 48px;
@@ -179,11 +250,12 @@ export default function ServiceMap() {
         map,
         position,
         content: markerContent,
-        title: location.vendor?.name || 'مزود خدمة'
+        title: tech.name
       });
 
       marker.addListener('click', () => {
-        setSelectedVendor(location);
+        setSelectedTechnician(tech);
+        setSelectedBranch(null);
         map.panTo(position);
         map.setZoom(15);
       });
@@ -194,9 +266,29 @@ export default function ServiceMap() {
 
     setMarkers(newMarkers);
     
-    if (locations.length > 0) {
+    if (newMarkers.length > 0) {
       map.fitBounds(bounds);
     }
+  };
+
+  // Helper to parse map_url from branches2
+  const parseMapUrl = (mapUrl: string): { lat: number; lng: number } | null => {
+    try {
+      // Try to extract coordinates from Google Maps URL
+      const match = mapUrl.match(/@(-?\d+\.\d+),(-?\d+\.\d+)/);
+      if (match) {
+        return { lat: parseFloat(match[1]), lng: parseFloat(match[2]) };
+      }
+      
+      // Try to parse as JSON
+      const parsed = JSON.parse(mapUrl);
+      if (parsed.lat && parsed.lng) {
+        return { lat: parseFloat(parsed.lat), lng: parseFloat(parsed.lng) };
+      }
+    } catch (e) {
+      console.error('Error parsing map_url:', e);
+    }
+    return null;
   };
 
   const handleSearch = async () => {
@@ -240,11 +332,18 @@ export default function ServiceMap() {
     );
   };
 
-  const handleRequestService = (vendorId: string) => {
-    const vendor = locations.find(l => l.vendor?.id === vendorId)?.vendor;
-    if (vendor) {
-      setRequestVendor({ id: vendor.id, name: vendor.name });
-      setRequestDialogOpen(true);
+  const handleRefresh = () => {
+    refetchBranches();
+    refetchTechnicians();
+  };
+
+  const handleRequestService = (technicianId: string) => {
+    const tech = technicians.find(t => t.id === technicianId);
+    if (tech) {
+      toast({
+        title: 'طلب خدمة',
+        description: `سيتم التواصل مع ${tech.name} قريباً`,
+      });
     }
   };
 
@@ -263,33 +362,28 @@ export default function ServiceMap() {
   return (
     <div className="h-screen flex flex-col bg-background">
       {/* Header */}
-      <div className="bg-card border-b px-4 py-3">
+      <div className="bg-gradient-to-r from-primary via-primary/90 to-primary/80 border-b px-6 py-4 shadow-lg">
         <div className="flex items-center justify-between gap-4">
-          {/* View Mode Toggle */}
-          <div className="flex gap-2">
-            <Button
-              variant={viewMode === 'map' ? 'default' : 'outline'}
-              size="sm"
-              onClick={() => setViewMode('map')}
-            >
-              <MapIcon className="h-4 w-4 mr-2" />
-              خريطة
-            </Button>
-            <Button
-              variant={viewMode === 'list' ? 'default' : 'outline'}
-              size="sm"
-              onClick={() => setViewMode('list')}
-            >
-              <List className="h-4 w-4 mr-2" />
-              قائمة
-            </Button>
+          <div className="flex items-center gap-3">
+            <div className="bg-white/20 backdrop-blur-sm rounded-full p-2">
+              <Store className="h-6 w-6 text-white" />
+            </div>
+            <div>
+              <h1 className="text-2xl font-bold text-white">UberFix.shop</h1>
+              <p className="text-sm text-white/90">منصة الصيانة الذكية</p>
+            </div>
           </div>
-
-          {/* Service Filter */}
-          <Button variant="outline" size="sm">
-            <Wrench className="h-4 w-4 mr-2" />
-            الخدمات
-          </Button>
+          
+          <div className="flex gap-3">
+            <Badge className="bg-white/20 backdrop-blur-sm text-white border-white/30 px-4 py-2">
+              <Users className="h-4 w-4 ml-2" />
+              {technicians.filter(t => t.status === 'online').length} فني نشط
+            </Badge>
+            <Badge className="bg-white/20 backdrop-blur-sm text-white border-white/30 px-4 py-2">
+              <Store className="h-4 w-4 ml-2" />
+              {branches.length} فرع
+            </Badge>
+          </div>
         </div>
       </div>
 
@@ -312,12 +406,32 @@ export default function ServiceMap() {
         </div>
       </div>
 
-      {/* Provider Count Badge */}
-      {locations.length > 0 && (
-        <div className="absolute top-32 left-4 z-10">
-          <Badge className="bg-primary text-primary-foreground px-4 py-2 text-sm font-semibold shadow-lg">
-            مزودي الخدمة: {locations.length}
-          </Badge>
+      {/* Specialization Filters */}
+      {specializationIcons.length > 0 && (
+        <div className="absolute top-4 left-4 z-10 max-w-md">
+          <Card className="p-3 bg-card/95 backdrop-blur-sm">
+            <p className="text-xs font-semibold mb-2 text-muted-foreground">التخصصات:</p>
+            <div className="flex flex-wrap gap-2">
+              <Badge
+                variant={!selectedSpecialization ? 'default' : 'outline'}
+                className="cursor-pointer"
+                onClick={() => setSelectedSpecialization(undefined)}
+              >
+                الكل
+              </Badge>
+              {specializationIcons.map((spec) => (
+                <Badge
+                  key={spec.id}
+                  variant={selectedSpecialization === spec.name ? 'default' : 'outline'}
+                  className="cursor-pointer"
+                  style={selectedSpecialization === spec.name ? { backgroundColor: spec.color } : {}}
+                  onClick={() => setSelectedSpecialization(spec.name)}
+                >
+                  {spec.name_ar}
+                </Badge>
+              ))}
+            </div>
+          </Card>
         </div>
       )}
 
@@ -339,7 +453,7 @@ export default function ServiceMap() {
             size="icon"
             variant="secondary"
             className="rounded-full shadow-lg bg-card hover:bg-accent"
-            onClick={() => refetch()}
+            onClick={handleRefresh}
           >
             <RefreshCw className="h-5 w-5" />
           </Button>
@@ -365,14 +479,51 @@ export default function ServiceMap() {
           </Button>
         </div>
 
-        {/* Selected Vendor Info */}
-        {selectedVendor && (
+        {/* Selected Technician Info */}
+        {selectedTechnician && (
           <div className="absolute top-4 left-1/2 -translate-x-1/2 z-20 max-w-md">
-            <VendorMarkerInfo
-              vendor={selectedVendor}
+            <TechnicianMarkerInfo
+              technician={selectedTechnician}
               onRequestService={handleRequestService}
-              onClose={() => setSelectedVendor(null)}
+              onClose={() => setSelectedTechnician(null)}
             />
+          </div>
+        )}
+
+        {/* Selected Branch Info */}
+        {selectedBranch && (
+          <div className="absolute top-4 left-1/2 -translate-x-1/2 z-20 max-w-md">
+            <Card className="w-80 shadow-xl">
+              <div className="p-4">
+                <div className="flex items-start justify-between mb-3">
+                  <div>
+                    <h3 className="font-bold text-lg">{selectedBranch.name}</h3>
+                    {selectedBranch.description && (
+                      <p className="text-sm text-muted-foreground mt-1">{selectedBranch.description}</p>
+                    )}
+                  </div>
+                  <Button
+                    size="sm"
+                    variant="ghost"
+                    onClick={() => setSelectedBranch(null)}
+                  >
+                    ✕
+                  </Button>
+                </div>
+                
+                {selectedBranch.location && (
+                  <p className="text-sm text-muted-foreground mb-2">📍 {selectedBranch.location}</p>
+                )}
+                
+                {selectedBranch.phone && (
+                  <p className="text-sm">📞 {selectedBranch.phone}</p>
+                )}
+                
+                {selectedBranch.email && (
+                  <p className="text-sm">✉️ {selectedBranch.email}</p>
+                )}
+              </div>
+            </Card>
           </div>
         )}
 
@@ -386,16 +537,6 @@ export default function ServiceMap() {
         )}
       </div>
 
-      {/* Service Request Dialog */}
-      {requestVendor && (
-        <ServiceRequestDialog
-          open={requestDialogOpen}
-          onOpenChange={setRequestDialogOpen}
-          vendorId={requestVendor.id}
-          vendorName={requestVendor.name}
-          userLocation={userLocation || undefined}
-        />
-      )}
     </div>
   );
 }
