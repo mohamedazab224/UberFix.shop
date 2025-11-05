@@ -159,6 +159,7 @@ export default function ServiceMap() {
     
     const addCustomerMarker = (position: { lat: number; lng: number }, name: string) => {
       const marker = new google.maps.Marker({
+        map,
         position,
         title: name,
         icon: {
