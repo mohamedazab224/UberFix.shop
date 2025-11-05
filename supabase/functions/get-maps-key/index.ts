@@ -1,3 +1,6 @@
+// IMPORTANT: This edge function is PUBLIC (no auth required) to allow map loading
+// It only returns the Google Maps API key which is public anyway
+
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 
 const corsHeaders = {
@@ -12,18 +15,17 @@ serve(async (req) => {
   }
 
   try {
+    console.log('🗺️ Google Maps API Key request received');
+    
     // محاولة الحصول على المفاتيح بالترتيب
-    let googleMapsApiKey = Deno.env.get('GOOGLE_MAPS_API_KEY') 
-      || Deno.env.get('GOOGLE_MAPS_API_KEY2')
-      || Deno.env.get('GOOGLE_MAPS_KEY')
-      || Deno.env.get('MAPS_API_KEY');
+    const googleMapsApiKey = Deno.env.get('GOOGLE_MAPS_API_KEY');
 
     if (!googleMapsApiKey) {
-      console.error('No Google Maps API Key found in environment');
-      throw new Error('Missing Google Maps API Key');
+      console.error('❌ No Google Maps API Key found in environment');
+      throw new Error('Missing Google Maps API Key - please add GOOGLE_MAPS_API_KEY secret');
     }
 
-    console.log('Google Maps API key loaded successfully');
+    console.log('✅ Google Maps API key loaded successfully');
 
     return new Response(
       JSON.stringify({ apiKey: googleMapsApiKey }), 
@@ -32,7 +34,7 @@ serve(async (req) => {
       }
     );
   } catch (error) {
-    console.error('Error getting Google Maps API key:', error);
+    console.error('❌ Error getting Google Maps API key:', error);
     return new Response(
       JSON.stringify({ 
         error: 'Failed to get Google Maps API key',

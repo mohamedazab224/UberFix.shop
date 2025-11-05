@@ -58,20 +58,30 @@ export const GoogleMap: React.FC<GoogleMapProps> = ({
 
   const fetchApiKey = async () => {
     try {
-      // محاولة جلب API key من cache أولاً
+      // استخدام المفتاح من .env مباشرة (public key)
+      const envKey = import.meta.env.VITE_GOOGLE_MAPS_API_KEY;
+      
+      if (envKey) {
+        console.log('✅ Google Maps API Key loaded from environment');
+        setApiKey(envKey);
+        return;
+      }
+
+      // Fallback: محاولة جلب من cache
       const cachedKey = getCachedApiKey();
       if (cachedKey) {
+        console.log('✅ Google Maps API Key loaded from cache');
         setApiKey(cachedKey);
         return;
       }
 
       console.log('🗺️ Fetching Google Maps API key from server...');
       
-      // جلب API key من Supabase Edge Function
+      // Fallback: جلب API key من Supabase Edge Function
       const response = await supabase.functions.invoke('get-maps-key');
       
       if (response.data && response.data.apiKey) {
-        console.log('✅ API Key loaded successfully');
+        console.log('✅ API Key loaded from server');
         const key = response.data.apiKey;
         
         // حفظ في cache
