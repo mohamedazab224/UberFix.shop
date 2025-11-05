@@ -1,10 +1,66 @@
 import { GoogleMap } from "@/components/maps/GoogleMap";
 import { Input } from "@/components/ui/input";
-import { Search, Phone, Globe } from "lucide-react";
-import { useState } from "react";
+import { Search, Phone, Globe, Loader2 } from "lucide-react";
+import { useState, useMemo } from "react";
+import { useBranches2 } from "@/hooks/useBranches2";
+import { parseLocation, getCategoryIcon } from "@/utils/mapIconHelper";
+import { BranchMarkerInfo } from "@/components/maps/BranchMarkerInfo";
+import { useNavigate } from "react-router-dom";
 
 export default function Map() {
   const [searchQuery, setSearchQuery] = useState("");
+  const [selectedBranch, setSelectedBranch] = useState<any>(null);
+  const { branches, loading } = useBranches2();
+  const navigate = useNavigate();
+
+  // Filter branches based on search
+  const filteredBranches = useMemo(() => {
+    if (!searchQuery) return branches;
+    const query = searchQuery.toLowerCase();
+    return branches.filter(
+      (b) =>
+        b.name?.toLowerCase().includes(query) ||
+        b.location?.toLowerCase().includes(query) ||
+        b.category?.toLowerCase().includes(query)
+    );
+  }, [branches, searchQuery]);
+
+  // Convert branches to map markers
+  const markers = useMemo(() => {
+    return filteredBranches
+      .map((branch) => {
+        const coords = parseLocation(branch.location);
+        if (!coords) return null;
+
+        const { icon, color } = getCategoryIcon(branch.category);
+
+        return {
+          id: branch.id,
+          lat: coords.lat,
+          lng: coords.lng,
+          title: branch.name,
+          type: 'branch' as const,
+          icon,
+          color,
+          data: branch,
+        };
+      })
+      .filter((m) => m !== null);
+  }, [filteredBranches]);
+
+  // Calculate center from markers
+  const mapCenter = useMemo(() => {
+    if (markers.length === 0) {
+      return { lat: 30.0444, lng: 31.2357 }; // Cairo default
+    }
+    const avgLat = markers.reduce((sum, m) => sum + m!.lat, 0) / markers.length;
+    const avgLng = markers.reduce((sum, m) => sum + m!.lng, 0) / markers.length;
+    return { lat: avgLat, lng: avgLng };
+  }, [markers]);
+
+  const handleRequestService = (branchId: string) => {
+    navigate('/service-request', { state: { branchId } });
+  };
 
   return (
     <div className="min-h-screen bg-gradient-to-b from-[#1a1f2e] to-[#0f1419] text-white">
@@ -38,31 +94,41 @@ export default function Map() {
 
       {/* Map Section */}
       <div className="container mx-auto px-4 pb-8">
-        <div className="rounded-lg overflow-hidden shadow-2xl">
-          <GoogleMap 
-            height="calc(100vh - 400px)"
-            latitude={30.0444}
-            longitude={31.2357}
-            zoom={12}
-            interactive={true}
-            markers={[
-              {
-                id: '1',
-                lat: 30.0444,
-                lng: 31.2357,
-                title: 'B/500 Maadi New, Cairo, Egypt',
-                type: 'vendor'
-              },
-              {
-                id: '2',
-                lat: 31.0409,
-                lng: 31.3785,
-                title: '38 Elmahta Street, Nabaroh, Daqahlia',
-                type: 'vendor'
-              }
-            ]}
-          />
-        </div>
+        {loading ? (
+          <div className="flex items-center justify-center h-[500px] rounded-lg bg-muted">
+            <Loader2 className="h-8 w-8 animate-spin text-primary" />
+          </div>
+        ) : (
+          <div className="rounded-lg overflow-hidden shadow-2xl relative">
+            <GoogleMap 
+              height="calc(100vh - 400px)"
+              latitude={mapCenter.lat}
+              longitude={mapCenter.lng}
+              zoom={markers.length > 1 ? 11 : 13}
+              interactive={true}
+              markers={markers as any}
+              onMarkerClick={(marker) => setSelectedBranch(marker.data)}
+            />
+            
+            {/* Branch Info Card */}
+            {selectedBranch && (
+              <div className="absolute top-4 left-4 z-10 animate-in slide-in-from-left">
+                <BranchMarkerInfo
+                  branch={selectedBranch}
+                  onRequestService={handleRequestService}
+                  onClose={() => setSelectedBranch(null)}
+                />
+              </div>
+            )}
+          </div>
+        )}
+        
+        {/* Results count */}
+        {!loading && (
+          <div className="mt-4 text-center text-sm text-muted-foreground">
+            عرض {filteredBranches.length} من {branches.length} فرع
+          </div>
+        )}
       </div>
 
       {/* Footer Info Section */}

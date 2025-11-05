@@ -11,20 +11,26 @@ import { getCachedApiKey, setCachedApiKey } from '@/lib/mapsCache';
 // إضافة تعريفات TypeScript لـ Google Maps
 /// <reference types="google.maps" />
 
+interface MapMarker {
+  id: string;
+  lat: number;
+  lng: number;
+  title: string;
+  type?: 'vendor' | 'request' | 'user' | 'branch';
+  icon?: string;
+  color?: string;
+  data?: any;
+}
+
 interface GoogleMapProps {
   latitude?: number;
   longitude?: number;
   onLocationSelect?: (lat: number, lng: number, address?: string) => void;
-  markers?: Array<{
-    id: string;
-    lat: number;
-    lng: number;
-    title: string;
-    type?: 'vendor' | 'request' | 'user';
-  }>;
+  markers?: MapMarker[];
   zoom?: number;
   height?: string;
   interactive?: boolean;
+  onMarkerClick?: (marker: MapMarker) => void;
 }
 
 export const GoogleMap: React.FC<GoogleMapProps> = ({
@@ -34,7 +40,8 @@ export const GoogleMap: React.FC<GoogleMapProps> = ({
   markers = [],
   zoom = 10,
   height = '400px',
-  interactive = true
+  interactive = true,
+  onMarkerClick
 }) => {
   const mapRef = useRef<HTMLDivElement>(null);
   const [map, setMap] = useState<google.maps.Map | null>(null);
@@ -196,19 +203,34 @@ export const GoogleMap: React.FC<GoogleMapProps> = ({
     const newMarkers: google.maps.Marker[] = [];
 
     markers.forEach(marker => {
-      const mapMarker = new google.maps.Marker({
+      const markerOptions: google.maps.MarkerOptions = {
         position: { lat: marker.lat, lng: marker.lng },
         map: mapInstance,
         title: marker.title,
-        icon: getMarkerIcon(marker.type)
-      });
+      };
 
-      const infoWindow = new google.maps.InfoWindow({
-        content: `<div style="padding: 8px;"><strong>${marker.title}</strong></div>`
-      });
+      // Use custom icon if provided
+      if (marker.icon) {
+        markerOptions.icon = {
+          url: marker.icon,
+          scaledSize: new google.maps.Size(40, 50),
+          anchor: new google.maps.Point(20, 50),
+        };
+      } else {
+        markerOptions.icon = getMarkerIcon(marker.type);
+      }
+
+      const mapMarker = new google.maps.Marker(markerOptions);
 
       mapMarker.addListener('click', () => {
-        infoWindow.open(mapInstance, mapMarker);
+        if (onMarkerClick) {
+          onMarkerClick(marker);
+        } else {
+          const infoWindow = new google.maps.InfoWindow({
+            content: `<div style="padding: 8px;"><strong>${marker.title}</strong></div>`
+          });
+          infoWindow.open(mapInstance, mapMarker);
+        }
       });
 
       newMarkers.push(mapMarker);
