@@ -1,4 +1,4 @@
-// src/App.tsx - النسخة المُصححة
+// src/App.tsx - النسخة المدمجة
 import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
@@ -51,6 +51,11 @@ import UserManagement from "./pages/admin/UserManagement";
 import EditProperty from "./pages/properties/EditProperty";
 import LifecycleTesting from "./pages/LifecycleTesting";
 
+// المسارات الجديدة من النسخة الثانية
+import Home from "./pages/Home";
+import MapPage from "./pages/MapPage";
+import RegisterService from "./pages/RegisterService";
+
 const queryClient = new QueryClient({
   defaultOptions: {
     queries: {
@@ -81,6 +86,9 @@ const App = () => {
               <Routes>
                 {/* الصفحات العامة بدون Layout */}
                 <Route path="/" element={<Index />} />
+                <Route path="/home" element={<Home />} />
+                <Route path="/map-page" element={<MapPage />} />
+                <Route path="/register-service" element={<RegisterService />} />
                 <Route path="/role-selection" element={<RoleSelection />} />
                 <Route path="/login" element={<Login />} />
                 <Route path="/register" element={<Register />} />
