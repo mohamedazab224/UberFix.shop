@@ -5,9 +5,6 @@
 # يسمح بإدارة تبعيات متعددة من مكان واحد
 
 packages:
-  # Frontend React Application
-  - 'frontend'
-  
   # Supabase Edge Functions
   - 'supabase/functions/*'
 
