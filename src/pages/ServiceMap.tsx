@@ -164,8 +164,9 @@ export default function ServiceMap() {
         title: name,
         icon: {
           url: customerIcon,
-          scaledSize: new google.maps.Size(50, 60),
-          anchor: new google.maps.Point(25, 60),
+          scaledSize: new google.maps.Size(40, 48),
+          anchor: new google.maps.Point(20, 48),
+          origin: new google.maps.Point(0, 0),
         },
         optimized: false,
       });
@@ -236,8 +237,9 @@ export default function ServiceMap() {
         title: branch.name,
         icon: {
           url: branchIcon.icon,
-          scaledSize: new google.maps.Size(80, 96),
-          anchor: new google.maps.Point(40, 96),
+          scaledSize: new google.maps.Size(50, 60),
+          anchor: new google.maps.Point(25, 60),
+          origin: new google.maps.Point(0, 0),
         },
         optimized: false,
         animation: google.maps.Animation.DROP,
@@ -290,8 +292,9 @@ export default function ServiceMap() {
         title: tech.name,
         icon: {
           url: iconUrl,
-          scaledSize: new google.maps.Size(80, 96),
-          anchor: new google.maps.Point(40, 96),
+          scaledSize: new google.maps.Size(50, 60),
+          anchor: new google.maps.Point(25, 60),
+          origin: new google.maps.Point(0, 0),
         },
         optimized: false,
         animation: google.maps.Animation.DROP,
@@ -346,8 +349,9 @@ export default function ServiceMap() {
               position,
               icon: {
                 url: customerIcon,
-                scaledSize: new google.maps.Size(70, 84),
-                anchor: new google.maps.Point(35, 84),
+                scaledSize: new google.maps.Size(50, 60),
+                anchor: new google.maps.Point(25, 60),
+                origin: new google.maps.Point(0, 0),
               },
               label: {
                 text: String(count),
@@ -356,6 +360,7 @@ export default function ServiceMap() {
                 fontWeight: 'bold',
               },
               zIndex: Number(google.maps.Marker.MAX_ZINDEX) + count,
+              optimized: false,
             });
           },
         },
