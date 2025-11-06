@@ -1,10 +1,11 @@
 import { useState } from "react";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { CheckCircle, XCircle, Clock, PlayCircle } from "lucide-react";
+import { CheckCircle, XCircle, Clock, PlayCircle, Rocket } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
+import { useNavigate } from "react-router-dom";
 
 interface TestResult {
   name: string;
@@ -1217,10 +1218,35 @@ const Testing = () => {
   const errorCount = testResults.filter(test => test.status === 'error').length;
   const totalTests = testResults.length;
 
+  const navigate = useNavigate();
+
   return (
     <div className="space-y-6">
-        <div className="flex justify-between items-center">
-        <h1 className="text-3xl font-bold">اختبار النظام</h1>
+      {/* بطاقة اختبار دورة الحياة */}
+      <Card className="bg-gradient-to-r from-primary/10 to-primary/5 border-primary/20">
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2 text-2xl">
+            <Rocket className="h-6 w-6 text-primary" />
+            اختبار دورة حياة طلب الصيانة الكامل
+          </CardTitle>
+          <CardDescription>
+            اختبار شامل لجميع مراحل دورة حياة طلب الصيانة من الإنشاء حتى الإغلاق مع نتائج حقيقية
+          </CardDescription>
+        </CardHeader>
+        <CardContent>
+          <Button 
+            onClick={() => navigate('/lifecycle-testing')}
+            size="lg"
+            className="w-full md:w-auto"
+          >
+            <PlayCircle className="h-5 w-5 ml-2" />
+            بدء اختبار دورة الحياة
+          </Button>
+        </CardContent>
+      </Card>
+
+      <div className="flex justify-between items-center">
+        <h1 className="text-3xl font-bold">اختبارات النظام الأخرى</h1>
         <Button 
           onClick={runAllTests} 
           disabled={isRunning}
