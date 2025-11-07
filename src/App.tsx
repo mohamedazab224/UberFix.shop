@@ -25,7 +25,7 @@ import Appointments from "./pages/Appointments";
 import Invoices from "./pages/Invoices";
 import Map from "./pages/Map";
 import PropertiesMap from "./pages/PropertiesMap";
-import ServiceMap from "./pages/ServiceMap";
+// ServiceMap removed - using MapPage instead
 import EmergencyService from "./pages/EmergencyService";
 import Documentation from "./pages/Documentation";
 import UserGuide from "./pages/UserGuide";
@@ -51,8 +51,7 @@ import UserManagement from "./pages/admin/UserManagement";
 import EditProperty from "./pages/properties/EditProperty";
 import LifecycleTesting from "./pages/LifecycleTesting";
 
-// المسارات الجديدة من النسخة الثانية
-import Home from "./pages/Home";
+// صفحات الخريطة التفاعلية
 import MapPage from "./pages/MapPage";
 import RegisterService from "./pages/RegisterService";
 
@@ -86,8 +85,7 @@ const App = () => {
               <Routes>
                 {/* الصفحات العامة بدون Layout */}
                 <Route path="/" element={<Index />} />
-                <Route path="/home" element={<Home />} />
-                <Route path="/map-page" element={<MapPage />} />
+                <Route path="/map" element={<MapPage />} />
                 <Route path="/register-service" element={<RegisterService />} />
                 <Route path="/role-selection" element={<RoleSelection />} />
                 <Route path="/login" element={<Login />} />
@@ -224,7 +222,9 @@ const App = () => {
                 
                 <Route path="/service-map" element={
                   <AuthWrapper>
-                    <ServiceMap />
+                    <AppLayout>
+                      <Map />
+                    </AppLayout>
                   </AuthWrapper>
                 } />
                 
