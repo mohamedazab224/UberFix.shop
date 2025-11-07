@@ -1,5 +1,4 @@
-// src/App.tsx - النسخة المدمجة
-import React from "react";
+// src/App.tsx - النسخة المُصححة
 import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
@@ -25,7 +24,8 @@ import AddProperty from "./pages/properties/AddProperty";
 import Appointments from "./pages/Appointments";
 import Invoices from "./pages/Invoices";
 import Map from "./pages/Map";
-import InteractiveMap from "./pages/MapPage";
+import PropertiesMap from "./pages/PropertiesMap";
+import ServiceMap from "./pages/ServiceMap";
 import EmergencyService from "./pages/EmergencyService";
 import Documentation from "./pages/Documentation";
 import UserGuide from "./pages/UserGuide";
@@ -50,7 +50,6 @@ import MaintenanceReports from "./pages/MaintenanceReports";
 import UserManagement from "./pages/admin/UserManagement";
 import EditProperty from "./pages/properties/EditProperty";
 import LifecycleTesting from "./pages/LifecycleTesting";
-
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -202,16 +201,22 @@ const App = () => {
                 <Route path="/map" element={
                   <AuthWrapper>
                     <AppLayout>
-                      <InteractiveMap />
+                      <Map />
+                    </AppLayout>
+                  </AuthWrapper>
+                } />
+                
+                <Route path="/properties-map" element={
+                  <AuthWrapper>
+                    <AppLayout>
+                      <PropertiesMap />
                     </AppLayout>
                   </AuthWrapper>
                 } />
                 
                 <Route path="/service-map" element={
                   <AuthWrapper>
-                    <AppLayout>
-                      <Map />
-                    </AppLayout>
+                    <ServiceMap />
                   </AuthWrapper>
                 } />
                 

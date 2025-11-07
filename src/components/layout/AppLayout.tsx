@@ -99,7 +99,7 @@ export function AppLayout({ children }: AppLayoutProps) {
       <div className="min-h-screen flex w-full bg-background" dir="rtl">
         <AppSidebar />
         
-        <div className="flex-1 flex flex-col overflow-hidden">
+        <div className="flex-1 flex flex-col min-w-0">
           {/* Header with trigger and user menu */}
           <header className="h-14 flex items-center border-b border-border px-4 bg-card/95 backdrop-blur-sm sticky top-0 z-30 shadow-sm">
             <SidebarTrigger className="ml-2" />
@@ -199,7 +199,7 @@ export function AppLayout({ children }: AppLayoutProps) {
           
           {/* Page content */}
           <main className="flex-1 overflow-auto">
-            <div className="container mx-auto p-6 max-w-full">
+            <div className="container mx-auto p-4 sm:p-6 lg:p-8 max-w-7xl">
               {children}
             </div>
           </main>
