@@ -73,19 +73,8 @@ const items = [
   },
   {
     icon: MapPin,
-    label: "الخريطة",
-    href: "/map"
-  },
-  {
-    icon: MapPin,
-    label: "خريطة العقارات",
-    href: "/properties-map"
-  },
-  {
-    icon: MapPin,
     label: "خريطة الخدمات",
-    href: "/service-map",
-    badge: "جديد"
+    href: "/service-map"
   },
   {
     icon: FileText,
@@ -142,11 +131,6 @@ export function AppSidebar() {
                       {state !== "collapsed" && (
                         <>
                           <span>{item.label}</span>
-                          {item.badge && (
-                            <span className="bg-secondary text-secondary-foreground text-xs px-2 py-1 rounded-full font-semibold mr-auto">
-                              {item.badge}
-                            </span>
-                          )}
                           {item.showBadge && requests.length > 0 && (
                             <span className="bg-primary text-primary-foreground text-xs px-2 py-1 rounded-full font-semibold mr-auto">
                               {requests.length}

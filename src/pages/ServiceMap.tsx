@@ -5,7 +5,8 @@ import { loadGoogleMaps } from '@/lib/googleMapsLoader';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
-import { Card } from '@/components/ui/card';
+import { Card, CardHeader, CardContent, CardTitle } from '@/components/ui/card';
+import { ScrollArea } from '@/components/ui/scroll-area';
 import { 
   Search, 
   Navigation, 
@@ -13,13 +14,20 @@ import {
   ZoomIn,
   ZoomOut,
   Store,
-  Users
+  Users,
+  Star,
+  MapPin,
+  Phone,
+  DollarSign,
+  X,
+  Menu
 } from 'lucide-react';
 import { useBranches2, Branch2 } from '@/hooks/useBranches2';
 import { useTechnicians, Technician } from '@/hooks/useTechnicians';
 import { BRANCH_LOCATIONS } from '@/data/branch_locations';
 
 import { SimpleServiceCard } from '@/components/maps/SimpleServiceCard';
+import { EnhancedServiceCard } from '@/components/maps/EnhancedServiceCard';
 import { BranchInfoWindow } from '@/components/maps/BranchInfoWindow';
 import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
@@ -36,6 +44,7 @@ export default function ServiceMap() {
   const [userLocation, setUserLocation] = useState<{ lat: number; lng: number; address?: string } | null>(null);
   const [markerClusterer, setMarkerClusterer] = useState<MarkerClusterer | null>(null);
   const [markers, setMarkers] = useState<google.maps.Marker[]>([]);
+  const [showSidebar, setShowSidebar] = useState(true);
   
   const { branches, loading: branchesLoading, refetch: refetchBranches } = useBranches2();
   const { technicians, specializationIcons, loading: techniciansLoading, refetch: refetchTechnicians } = useTechnicians();
@@ -306,13 +315,29 @@ export default function ServiceMap() {
         
         let infoWindow: google.maps.InfoWindow | null = null;
         
+        // Calculate distance if user location is available
+        let distance = null;
+        if (userLocation) {
+          const R = 6371; // Earth radius in km
+          const dLat = (position.lat - userLocation.lat) * Math.PI / 180;
+          const dLng = (position.lng - userLocation.lng) * Math.PI / 180;
+          const a = Math.sin(dLat/2) * Math.sin(dLat/2) +
+                    Math.cos(userLocation.lat * Math.PI / 180) * Math.cos(position.lat * Math.PI / 180) *
+                    Math.sin(dLng/2) * Math.sin(dLng/2);
+          const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
+          distance = (R * c).toFixed(1);
+        }
+        
         root.render(
-          <SimpleServiceCard
+          <EnhancedServiceCard
             technicianId={tech.id}
             name={tech.name}
             specialization={tech.specialization || 'فني صيانة'}
             rating={tech.rating || 4.7}
             status={tech.status === 'online' ? 'available' : 'busy'}
+            hourlyRate={tech.hourly_rate || 0}
+            phone={tech.phone || ''}
+            distance={distance}
             onClose={() => {
               if (infoWindow) {
                 infoWindow.close();
@@ -324,6 +349,7 @@ export default function ServiceMap() {
         infoWindow = new google.maps.InfoWindow({
           content: infoDiv,
           disableAutoPan: false,
+          maxWidth: 350,
         });
         infoWindow.open(map, marker);
         
@@ -546,6 +572,133 @@ export default function ServiceMap() {
                 </Badge>
               ))}
             </div>
+          </Card>
+        </div>
+      )}
+
+      {/* Sidebar Toggle Button */}
+      {!showSidebar && (
+        <div className="absolute top-20 left-4 z-10">
+          <Button
+            size="icon"
+            variant="secondary"
+            className="rounded-full shadow-lg"
+            onClick={() => setShowSidebar(true)}
+          >
+            <Menu className="h-5 w-5" />
+          </Button>
+        </div>
+      )}
+
+      {/* Technicians Sidebar */}
+      {showSidebar && (
+        <div className="absolute top-20 left-4 z-10 w-80">
+          <Card className="shadow-xl bg-card/98 backdrop-blur-sm">
+            <CardHeader className="pb-3">
+              <div className="flex items-center justify-between">
+                <CardTitle className="text-base flex items-center gap-2">
+                  <Users className="h-5 w-5" />
+                  الفنيون المتاحون ({technicians.filter(t => t.current_latitude && t.current_longitude).length})
+                </CardTitle>
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  className="h-8 w-8"
+                  onClick={() => setShowSidebar(false)}
+                >
+                  <X className="h-4 w-4" />
+                </Button>
+              </div>
+            </CardHeader>
+            <CardContent className="p-0">
+              <ScrollArea className="h-96">
+                <div className="space-y-2 p-4">
+                  {technicians
+                    .filter(t => t.current_latitude && t.current_longitude)
+                    .filter(t => !selectedSpecialization || t.specialization === selectedSpecialization)
+                    .map((tech) => {
+                      const specIcon = specializationIcons.find(s => s.name === tech.specialization);
+                      
+                      // Calculate distance if user location is available
+                      let distance = null;
+                      if (userLocation && tech.current_latitude && tech.current_longitude) {
+                        const R = 6371;
+                        const dLat = (tech.current_latitude - userLocation.lat) * Math.PI / 180;
+                        const dLng = (tech.current_longitude - userLocation.lng) * Math.PI / 180;
+                        const a = Math.sin(dLat/2) * Math.sin(dLat/2) +
+                                  Math.cos(userLocation.lat * Math.PI / 180) * Math.cos(tech.current_latitude * Math.PI / 180) *
+                                  Math.sin(dLng/2) * Math.sin(dLng/2);
+                        const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
+                        distance = (R * c).toFixed(1);
+                      }
+                      
+                      return (
+                        <Card
+                          key={tech.id}
+                          className="cursor-pointer transition-all hover:shadow-md hover:border-primary/50"
+                          onClick={() => {
+                            if (tech.current_latitude && tech.current_longitude && map) {
+                              map.panTo({ lat: tech.current_latitude, lng: tech.current_longitude });
+                              map.setZoom(15);
+                            }
+                          }}
+                        >
+                          <CardContent className="p-3">
+                            <div className="space-y-2">
+                              <div className="flex items-start justify-between">
+                                <div className="flex-1">
+                                  <h4 className="font-bold text-sm">{tech.name}</h4>
+                                  <p className="text-xs text-muted-foreground">{tech.specialization}</p>
+                                </div>
+                                <Badge 
+                                  variant={tech.status === 'online' ? 'default' : 'secondary'}
+                                  className="text-xs"
+                                >
+                                  {tech.status === 'online' ? 'متاح' : 'مشغول'}
+                                </Badge>
+                              </div>
+                              
+                              <div className="flex items-center gap-3 text-xs">
+                                <div className="flex items-center gap-1">
+                                  <Star className="h-3 w-3 fill-yellow-500 text-yellow-500" />
+                                  <span className="font-medium">{tech.rating.toFixed(1)}</span>
+                                </div>
+                                
+                                {distance && (
+                                  <div className="flex items-center gap-1 text-muted-foreground">
+                                    <MapPin className="h-3 w-3" />
+                                    <span>{distance} كم</span>
+                                  </div>
+                                )}
+                                
+                                {tech.hourly_rate && tech.hourly_rate > 0 && (
+                                  <div className="flex items-center gap-1 text-muted-foreground">
+                                    <DollarSign className="h-3 w-3" />
+                                    <span>{tech.hourly_rate} ج.م/س</span>
+                                  </div>
+                                )}
+                              </div>
+                              
+                              {tech.phone && (
+                                <div className="flex items-center gap-1 text-xs text-muted-foreground">
+                                  <Phone className="h-3 w-3" />
+                                  <a 
+                                    href={`tel:${tech.phone}`}
+                                    className="text-primary hover:underline"
+                                    onClick={(e) => e.stopPropagation()}
+                                  >
+                                    {tech.phone}
+                                  </a>
+                                </div>
+                              )}
+                            </div>
+                          </CardContent>
+                        </Card>
+                      );
+                    })}
+                </div>
+              </ScrollArea>
+            </CardContent>
           </Card>
         </div>
       )}
