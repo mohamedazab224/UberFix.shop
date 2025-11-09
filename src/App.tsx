@@ -14,6 +14,7 @@ import RoleSelection from "./pages/RoleSelection";
 import Login from "./pages/Login";
 import Register from "./pages/Register";
 import Dashboard from "./pages/Dashboard";
+import SLADashboard from "./pages/SLADashboard";
 import Requests from "./pages/Requests";
 import AllRequests from "./pages/AllRequests";
 import RequestDetails from "./pages/RequestDetails";
@@ -23,8 +24,6 @@ import Properties from "./pages/Properties";
 import AddProperty from "./pages/properties/AddProperty";
 import Appointments from "./pages/Appointments";
 import Invoices from "./pages/Invoices";
-import Map from "./pages/Map";
-import PropertiesMap from "./pages/PropertiesMap";
 import ServiceMap from "./pages/ServiceMap";
 import EmergencyService from "./pages/EmergencyService";
 import Documentation from "./pages/Documentation";
@@ -49,7 +48,6 @@ import ExpenseReports from "./pages/ExpenseReports";
 import MaintenanceReports from "./pages/MaintenanceReports";
 import UserManagement from "./pages/admin/UserManagement";
 import EditProperty from "./pages/properties/EditProperty";
-import LifecycleTesting from "./pages/LifecycleTesting";
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -198,22 +196,6 @@ const App = () => {
                   </AuthWrapper>
                 } />
                 
-                <Route path="/map" element={
-                  <AuthWrapper>
-                    <AppLayout>
-                      <Map />
-                    </AppLayout>
-                  </AuthWrapper>
-                } />
-                
-                <Route path="/properties-map" element={
-                  <AuthWrapper>
-                    <AppLayout>
-                      <PropertiesMap />
-                    </AppLayout>
-                  </AuthWrapper>
-                } />
-                
                 <Route path="/service-map" element={
                   <AuthWrapper>
                     <ServiceMap />
@@ -282,6 +264,14 @@ const App = () => {
                   </AuthWrapper>
                 } />
                 
+                <Route path="/sla-dashboard" element={
+                  <AuthWrapper>
+                    <AppLayout>
+                      <SLADashboard />
+                    </AppLayout>
+                  </AuthWrapper>
+                } />
+                
                 <Route path="/production-monitor" element={
                   <AuthWrapper>
                     <AppLayout>
@@ -310,14 +300,6 @@ const App = () => {
                   <AuthWrapper>
                     <AppLayout>
                       <MaintenanceReports />
-                    </AppLayout>
-                  </AuthWrapper>
-                } />
-                
-                <Route path="/lifecycle-testing" element={
-                  <AuthWrapper>
-                    <AppLayout>
-                      <LifecycleTesting />
                     </AppLayout>
                   </AuthWrapper>
                 } />

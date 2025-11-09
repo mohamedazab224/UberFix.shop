@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "764868194614",
+    "project_id": "uberfixshop-app",
+    "storage_bucket": "uberfixshop-app.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:764868194614:android:716aa96b64cb3fbe378397",
+        "android_client_info": {
+          "package_name": "shop.uberfix"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyBaquTDakR3my9p2GtMqNBviqH8e5719kQ"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
