@@ -14,6 +14,7 @@ import RoleSelection from "./pages/RoleSelection";
 import Login from "./pages/Login";
 import Register from "./pages/Register";
 import Dashboard from "./pages/Dashboard";
+import SLADashboard from "./pages/SLADashboard";
 import Requests from "./pages/Requests";
 import AllRequests from "./pages/AllRequests";
 import RequestDetails from "./pages/RequestDetails";
@@ -259,6 +260,14 @@ const App = () => {
                   <AuthWrapper>
                     <AppLayout>
                       <ProductionReport />
+                    </AppLayout>
+                  </AuthWrapper>
+                } />
+                
+                <Route path="/sla-dashboard" element={
+                  <AuthWrapper>
+                    <AppLayout>
+                      <SLADashboard />
                     </AppLayout>
                   </AuthWrapper>
                 } />

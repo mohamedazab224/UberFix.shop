@@ -713,6 +713,9 @@ export type Database = {
           property_id: string | null
           rating: number | null
           service_type: string | null
+          sla_accept_due: string | null
+          sla_arrive_due: string | null
+          sla_complete_due: string | null
           sla_deadline: string | null
           sla_due_date: string | null
           status: Database["public"]["Enums"]["mr_status"]
@@ -747,6 +750,9 @@ export type Database = {
           property_id?: string | null
           rating?: number | null
           service_type?: string | null
+          sla_accept_due?: string | null
+          sla_arrive_due?: string | null
+          sla_complete_due?: string | null
           sla_deadline?: string | null
           sla_due_date?: string | null
           status?: Database["public"]["Enums"]["mr_status"]
@@ -781,6 +787,9 @@ export type Database = {
           property_id?: string | null
           rating?: number | null
           service_type?: string | null
+          sla_accept_due?: string | null
+          sla_arrive_due?: string | null
+          sla_complete_due?: string | null
           sla_deadline?: string | null
           sla_due_date?: string | null
           status?: Database["public"]["Enums"]["mr_status"]

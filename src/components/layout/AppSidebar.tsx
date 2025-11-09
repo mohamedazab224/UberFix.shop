@@ -12,7 +12,8 @@ import {
   DollarSign,
   PlayCircle,
   Activity,
-  ListChecks
+  ListChecks,
+  Clock
 } from "lucide-react";
 import { useMaintenanceRequests } from "@/hooks/useMaintenanceRequests";
 
@@ -95,6 +96,11 @@ const items = [
     icon: BarChart3,
     label: "تقرير الإنتاج",
     href: "/production-report"
+  },
+  {
+    icon: Clock,
+    label: "لوحة SLA",
+    href: "/sla-dashboard"
   },
   {
     icon: Activity,

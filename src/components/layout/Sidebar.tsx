@@ -14,7 +14,8 @@ import {
   Calendar,
   DollarSign,
   PlayCircle,
-  Activity
+  Activity,
+  Clock
 } from "lucide-react";
 
 interface SidebarProps {
@@ -83,6 +84,11 @@ const menuItems = [
     icon: BarChart3,
     label: "تقرير الإنتاج",
     href: "/production-report"
+  },
+  {
+    icon: Clock,
+    label: "لوحة SLA",
+    href: "/sla-dashboard"
   },
   {
     icon: Activity,
