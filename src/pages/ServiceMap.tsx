@@ -334,6 +334,7 @@ export default function ServiceMap() {
             name={tech.name}
             specialization={tech.specialization || 'فني صيانة'}
             rating={tech.rating || 4.7}
+            totalReviews={tech.total_reviews || 0}
             status={tech.status === 'online' ? 'available' : 'busy'}
             hourlyRate={tech.hourly_rate || 0}
             phone={tech.phone || ''}

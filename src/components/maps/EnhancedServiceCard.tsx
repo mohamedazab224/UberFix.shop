@@ -1,14 +1,24 @@
+import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { Star, Phone, Navigation, DollarSign, X } from "lucide-react";
+import { Star, Phone, Navigation, DollarSign, X, MessageSquare } from "lucide-react";
 import { useNavigate } from "react-router-dom";
+import { TechnicianReviews } from "@/components/reviews/TechnicianReviews";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
+import { Separator } from "@/components/ui/separator";
 
 interface EnhancedServiceCardProps {
   technicianId: string;
   name: string;
   specialization: string;
   rating: number;
+  totalReviews: number;
   status: 'available' | 'busy';
   hourlyRate?: number;
   phone?: string;
@@ -21,6 +31,7 @@ export function EnhancedServiceCard({
   name,
   specialization,
   rating,
+  totalReviews,
   status,
   hourlyRate = 0,
   phone = '',
@@ -28,6 +39,7 @@ export function EnhancedServiceCard({
   onClose
 }: EnhancedServiceCardProps) {
   const navigate = useNavigate();
+  const [showReviews, setShowReviews] = useState(false);
 
   const handleRequestService = () => {
     navigate('/service-request', { state: { technicianId } });
@@ -52,21 +64,26 @@ export function EnhancedServiceCard({
           </Button>
         </div>
 
-        {/* Status & Rating */}
-        <div className="flex items-center gap-2 flex-wrap">
-          <Badge 
-            variant={status === 'available' ? 'default' : 'secondary'}
-            className="font-medium"
-          >
-            {status === 'available' ? '✓ متاح الآن' : '⏳ مشغول'}
-          </Badge>
-          <div className="flex items-center gap-1">
-            <Star className="h-4 w-4 fill-yellow-500 text-yellow-500" />
-            <span className="font-medium">{rating.toFixed(1)}</span>
+        {/* Status Badge */}
+        <Badge 
+          variant={status === 'available' ? 'default' : 'secondary'}
+          className="font-medium w-fit"
+        >
+          {status === 'available' ? '✓ متاح الآن' : '⏳ مشغول'}
+        </Badge>
+
+        {/* Rating Section */}
+        <div className="flex items-center justify-between py-2">
+          <div className="flex items-center gap-2">
+            <Star className="h-5 w-5 fill-yellow-500 text-yellow-500" />
+            <span className="text-xl font-bold">{rating.toFixed(1)}</span>
+            <span className="text-sm text-muted-foreground">
+              ({totalReviews} تقييم)
+            </span>
           </div>
           {distance && (
             <div className="flex items-center gap-1 text-sm text-muted-foreground">
-              <Navigation className="h-3 w-3" />
+              <Navigation className="h-4 w-4" />
               <span>{distance} كم</span>
             </div>
           )}
@@ -94,15 +111,42 @@ export function EnhancedServiceCard({
           )}
         </div>
 
-        {/* Action Button */}
-        <Button 
-          className="w-full font-bold"
-          onClick={handleRequestService}
-          disabled={status !== 'available'}
-        >
-          اطلب الخدمة الآن
-        </Button>
+        <Separator />
+
+        {/* Action Buttons */}
+        <div className="flex gap-2">
+          <Button 
+            variant="outline"
+            className="flex-1 gap-2"
+            onClick={() => setShowReviews(true)}
+          >
+            <MessageSquare className="h-4 w-4" />
+            التقييمات
+          </Button>
+          <Button 
+            className="flex-1 font-bold"
+            onClick={handleRequestService}
+            disabled={status !== 'available'}
+          >
+            اطلب الخدمة
+          </Button>
+        </div>
       </div>
+
+      {/* Reviews Dialog */}
+      <Dialog open={showReviews} onOpenChange={setShowReviews}>
+        <DialogContent className="sm:max-w-2xl">
+          <DialogHeader>
+            <DialogTitle>تقييمات {name}</DialogTitle>
+          </DialogHeader>
+          <TechnicianReviews
+            technicianId={technicianId}
+            technicianName={name}
+            rating={rating}
+            totalReviews={totalReviews}
+          />
+        </DialogContent>
+      </Dialog>
     </Card>
   );
 }

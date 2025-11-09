@@ -278,6 +278,39 @@ export type Database = {
         }
         Relationships: []
       }
+      branch_locations: {
+        Row: {
+          address: string | null
+          branch: string
+          branch_type: string | null
+          icon: string | null
+          id: string
+          latitude: string | null
+          link: string | null
+          longitude: string | null
+        }
+        Insert: {
+          address?: string | null
+          branch: string
+          branch_type?: string | null
+          icon?: string | null
+          id: string
+          latitude?: string | null
+          link?: string | null
+          longitude?: string | null
+        }
+        Update: {
+          address?: string | null
+          branch?: string
+          branch_type?: string | null
+          icon?: string | null
+          id?: string
+          latitude?: string | null
+          link?: string | null
+          longitude?: string | null
+        }
+        Relationships: []
+      }
       branches: {
         Row: {
           address: string | null
@@ -324,66 +357,6 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
-      }
-      branches2: {
-        Row: {
-          area: number | null
-          category: string | null
-          created_at: string | null
-          created_by: string | null
-          description: string | null
-          email: string | null
-          id: string
-          is_deleted: boolean | null
-          location: string | null
-          map_url: string | null
-          name: string
-          opening_date: string | null
-          phone: string | null
-          region_id: string | null
-          status: string | null
-          updated_at: string | null
-          updated_by: string | null
-        }
-        Insert: {
-          area?: number | null
-          category?: string | null
-          created_at?: string | null
-          created_by?: string | null
-          description?: string | null
-          email?: string | null
-          id?: string
-          is_deleted?: boolean | null
-          location?: string | null
-          map_url?: string | null
-          name: string
-          opening_date?: string | null
-          phone?: string | null
-          region_id?: string | null
-          status?: string | null
-          updated_at?: string | null
-          updated_by?: string | null
-        }
-        Update: {
-          area?: number | null
-          category?: string | null
-          created_at?: string | null
-          created_by?: string | null
-          description?: string | null
-          email?: string | null
-          id?: string
-          is_deleted?: boolean | null
-          location?: string | null
-          map_url?: string | null
-          name?: string
-          opening_date?: string | null
-          phone?: string | null
-          region_id?: string | null
-          status?: string | null
-          updated_at?: string | null
-          updated_by?: string | null
-        }
-        Relationships: []
       }
       categories: {
         Row: {
@@ -1721,6 +1694,50 @@ export type Database = {
         }
         Relationships: []
       }
+      reviews: {
+        Row: {
+          comment: string | null
+          created_at: string
+          customer_id: string
+          id: string
+          images: string[] | null
+          rating: number
+          request_id: string | null
+          technician_id: string
+          updated_at: string
+        }
+        Insert: {
+          comment?: string | null
+          created_at?: string
+          customer_id: string
+          id?: string
+          images?: string[] | null
+          rating: number
+          request_id?: string | null
+          technician_id: string
+          updated_at?: string
+        }
+        Update: {
+          comment?: string | null
+          created_at?: string
+          customer_id?: string
+          id?: string
+          images?: string[] | null
+          rating?: number
+          request_id?: string | null
+          technician_id?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "reviews_technician_id_fkey"
+            columns: ["technician_id"]
+            isOneToOne: false
+            referencedRelation: "technicians"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       service_categories: {
         Row: {
           created_at: string
@@ -2192,6 +2209,198 @@ export type Database = {
         }
         Relationships: []
       }
+      technician_applications: {
+        Row: {
+          center_id: string | null
+          city: string | null
+          country: string | null
+          created_at: string | null
+          email: string | null
+          exam_date: string | null
+          examiner_name: string | null
+          experience_years: number | null
+          full_name: string
+          id: string
+          notes: string | null
+          phone: string
+          score: number | null
+          specialization: string
+          status: string
+        }
+        Insert: {
+          center_id?: string | null
+          city?: string | null
+          country?: string | null
+          created_at?: string | null
+          email?: string | null
+          exam_date?: string | null
+          examiner_name?: string | null
+          experience_years?: number | null
+          full_name: string
+          id?: string
+          notes?: string | null
+          phone: string
+          score?: number | null
+          specialization: string
+          status?: string
+        }
+        Update: {
+          center_id?: string | null
+          city?: string | null
+          country?: string | null
+          created_at?: string | null
+          email?: string | null
+          exam_date?: string | null
+          examiner_name?: string | null
+          experience_years?: number | null
+          full_name?: string
+          id?: string
+          notes?: string | null
+          phone?: string
+          score?: number | null
+          specialization?: string
+          status?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "technician_applications_center_id_fkey"
+            columns: ["center_id"]
+            isOneToOne: false
+            referencedRelation: "technician_centers"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      technician_centers: {
+        Row: {
+          address: string | null
+          city: string | null
+          country: string | null
+          created_at: string | null
+          id: string
+          is_active: boolean | null
+          name: string
+          phone: string | null
+        }
+        Insert: {
+          address?: string | null
+          city?: string | null
+          country?: string | null
+          created_at?: string | null
+          id?: string
+          is_active?: boolean | null
+          name: string
+          phone?: string | null
+        }
+        Update: {
+          address?: string | null
+          city?: string | null
+          country?: string | null
+          created_at?: string | null
+          id?: string
+          is_active?: boolean | null
+          name?: string
+          phone?: string | null
+        }
+        Relationships: []
+      }
+      technician_documents: {
+        Row: {
+          doc_type: string
+          file_url: string
+          id: string
+          technician_id: string | null
+          uploaded_at: string | null
+          verified: boolean | null
+        }
+        Insert: {
+          doc_type: string
+          file_url: string
+          id?: string
+          technician_id?: string | null
+          uploaded_at?: string | null
+          verified?: boolean | null
+        }
+        Update: {
+          doc_type?: string
+          file_url?: string
+          id?: string
+          technician_id?: string | null
+          uploaded_at?: string | null
+          verified?: boolean | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "technician_documents_technician_id_fkey"
+            columns: ["technician_id"]
+            isOneToOne: false
+            referencedRelation: "technicians"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      technician_progress: {
+        Row: {
+          created_at: string | null
+          id: string
+          progress_value: number | null
+          step_name: string
+          technician_id: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          id?: string
+          progress_value?: number | null
+          step_name: string
+          technician_id?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          id?: string
+          progress_value?: number | null
+          step_name?: string
+          technician_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "technician_progress_technician_id_fkey"
+            columns: ["technician_id"]
+            isOneToOne: false
+            referencedRelation: "technicians"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      technician_regions: {
+        Row: {
+          region_id: string
+          technician_id: string
+        }
+        Insert: {
+          region_id: string
+          technician_id: string
+        }
+        Update: {
+          region_id?: string
+          technician_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "technician_regions_region_id_fkey"
+            columns: ["region_id"]
+            isOneToOne: false
+            referencedRelation: "regions"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "technician_regions_technician_id_fkey"
+            columns: ["technician_id"]
+            isOneToOne: false
+            referencedRelation: "technicians"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       technician_reviews: {
         Row: {
           created_at: string | null
@@ -2236,22 +2445,64 @@ export type Database = {
           },
         ]
       }
+      technician_tasks: {
+        Row: {
+          completed: boolean | null
+          completed_at: string | null
+          id: string
+          progress_value: number | null
+          task_name: string
+          technician_id: string | null
+        }
+        Insert: {
+          completed?: boolean | null
+          completed_at?: string | null
+          id?: string
+          progress_value?: number | null
+          task_name: string
+          technician_id?: string | null
+        }
+        Update: {
+          completed?: boolean | null
+          completed_at?: string | null
+          id?: string
+          progress_value?: number | null
+          task_name?: string
+          technician_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "technician_tasks_technician_id_fkey"
+            columns: ["technician_id"]
+            isOneToOne: false
+            referencedRelation: "technicians"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       technicians: {
         Row: {
+          application_id: string | null
           available_from: string | null
           available_to: string | null
           bio: string | null
           certifications: Json | null
+          city_id: number | null
+          code: string | null
           company_id: string | null
+          country_code: string | null
           created_at: string | null
           created_by: string | null
           current_latitude: number | null
           current_longitude: number | null
+          district_id: number | null
           email: string | null
           hourly_rate: number | null
+          icon_url: string | null
           id: string
           is_active: boolean | null
           is_verified: boolean | null
+          level: string
           location_updated_at: string | null
           name: string
           phone: string | null
@@ -2262,22 +2513,32 @@ export type Database = {
           status: string | null
           total_reviews: number | null
           updated_at: string | null
+          verification_center_id: string | null
+          verification_notes: string | null
+          verified_at: string | null
         }
         Insert: {
+          application_id?: string | null
           available_from?: string | null
           available_to?: string | null
           bio?: string | null
           certifications?: Json | null
+          city_id?: number | null
+          code?: string | null
           company_id?: string | null
+          country_code?: string | null
           created_at?: string | null
           created_by?: string | null
           current_latitude?: number | null
           current_longitude?: number | null
+          district_id?: number | null
           email?: string | null
           hourly_rate?: number | null
+          icon_url?: string | null
           id?: string
           is_active?: boolean | null
           is_verified?: boolean | null
+          level?: string
           location_updated_at?: string | null
           name: string
           phone?: string | null
@@ -2288,22 +2549,32 @@ export type Database = {
           status?: string | null
           total_reviews?: number | null
           updated_at?: string | null
+          verification_center_id?: string | null
+          verification_notes?: string | null
+          verified_at?: string | null
         }
         Update: {
+          application_id?: string | null
           available_from?: string | null
           available_to?: string | null
           bio?: string | null
           certifications?: Json | null
+          city_id?: number | null
+          code?: string | null
           company_id?: string | null
+          country_code?: string | null
           created_at?: string | null
           created_by?: string | null
           current_latitude?: number | null
           current_longitude?: number | null
+          district_id?: number | null
           email?: string | null
           hourly_rate?: number | null
+          icon_url?: string | null
           id?: string
           is_active?: boolean | null
           is_verified?: boolean | null
+          level?: string
           location_updated_at?: string | null
           name?: string
           phone?: string | null
@@ -2314,8 +2585,47 @@ export type Database = {
           status?: string | null
           total_reviews?: number | null
           updated_at?: string | null
+          verification_center_id?: string | null
+          verification_notes?: string | null
+          verified_at?: string | null
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "technicians_application_id_fkey"
+            columns: ["application_id"]
+            isOneToOne: false
+            referencedRelation: "technician_applications"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "technicians_city_id_fkey"
+            columns: ["city_id"]
+            isOneToOne: false
+            referencedRelation: "cities"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "technicians_city_id_fkey"
+            columns: ["city_id"]
+            isOneToOne: false
+            referencedRelation: "vw_cities_public"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "technicians_district_id_fkey"
+            columns: ["district_id"]
+            isOneToOne: false
+            referencedRelation: "districts"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "technicians_verification_center_id_fkey"
+            columns: ["verification_center_id"]
+            isOneToOne: false
+            referencedRelation: "technician_centers"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       units: {
         Row: {
