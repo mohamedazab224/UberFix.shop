@@ -20,7 +20,8 @@ import {
   Phone,
   DollarSign,
   X,
-  Menu
+  Menu,
+  ArrowRight
 } from 'lucide-react';
 import { useBranches2, Branch2 } from '@/hooks/useBranches2';
 import { useTechnicians, Technician } from '@/hooks/useTechnicians';
@@ -33,8 +34,10 @@ import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
 import { getCachedApiKey, setCachedApiKey } from '@/lib/mapsCache';
 import { getBranchIcon, getTechnicianIcon } from '@/utils/mapIconHelper';
+import { useNavigate } from 'react-router-dom';
 
 export default function ServiceMap() {
+  const navigate = useNavigate();
   const mapRef = useRef<HTMLDivElement>(null);
   const [map, setMap] = useState<google.maps.Map | null>(null);
   const [apiKey, setApiKey] = useState('');
@@ -507,6 +510,14 @@ export default function ServiceMap() {
       <div className="bg-gradient-to-r from-primary via-primary/90 to-primary/80 border-b px-6 py-4 shadow-lg">
         <div className="flex items-center justify-between gap-4">
           <div className="flex items-center gap-3">
+            <Button
+              variant="ghost"
+              size="icon"
+              className="text-white hover:bg-white/20"
+              onClick={() => navigate('/')}
+            >
+              <ArrowRight className="h-6 w-6" />
+            </Button>
             <div className="bg-white/20 backdrop-blur-sm rounded-full p-2">
               <Store className="h-6 w-6 text-white" />
             </div>
@@ -550,7 +561,7 @@ export default function ServiceMap() {
 
       {/* Specialization Filters */}
       {specializationIcons.length > 0 && (
-        <div className="absolute top-4 left-4 z-10 max-w-md">
+        <div className="absolute top-4 right-4 z-10 max-w-md">
           <Card className="p-3 bg-card/95 backdrop-blur-sm">
             <p className="text-xs font-semibold mb-2 text-muted-foreground">التخصصات:</p>
             <div className="flex flex-wrap gap-2">
@@ -579,7 +590,7 @@ export default function ServiceMap() {
 
       {/* Sidebar Toggle Button */}
       {!showSidebar && (
-        <div className="absolute top-20 left-4 z-10">
+        <div className="absolute top-32 left-4 z-10">
           <Button
             size="icon"
             variant="secondary"
@@ -593,7 +604,7 @@ export default function ServiceMap() {
 
       {/* Technicians Sidebar */}
       {showSidebar && (
-        <div className="absolute top-20 left-4 z-10 w-80">
+        <div className="absolute top-32 left-4 z-10 w-80 max-h-[calc(100vh-200px)]">
           <Card className="shadow-xl bg-card/98 backdrop-blur-sm">
             <CardHeader className="pb-3">
               <div className="flex items-center justify-between">
@@ -612,7 +623,7 @@ export default function ServiceMap() {
               </div>
             </CardHeader>
             <CardContent className="p-0">
-              <ScrollArea className="h-96">
+              <ScrollArea className="h-[calc(100vh-280px)]">
                 <div className="space-y-2 p-4">
                   {technicians
                     .filter(t => t.current_latitude && t.current_longitude)

@@ -95,26 +95,22 @@ export const importBranchesFromCSV = async (csvText: string, onProgress?: (curre
         const coords = await geocodeAddress(locationName || branch.name, apiKey);
         
         // تحضير البيانات للإدراج
-        const branchData = {
-          id: branch.id,
+        // ملاحظة: جدول branches يحتاج company_id (مطلوب) وهيكل مختلف عن CSV
+        // يجب تعديل هذا الكود ليتوافق مع هيكل جدول branches الفعلي
+        const branchData: any = {
           name: branch.name,
-          description: branch.description || null,
-          location: coords ? JSON.stringify(coords) : branch.location || null,
-          phone: branch.phone || null,
-          email: branch.email || null,
-          category: branch.category || null,
-          status: branch.status || 'active',
-          area: branch.area ? parseFloat(branch.area) : null,
-          opening_date: branch.opening_date || null,
-          region_id: branch.region_id || null,
-          map_url: branch.map_url || null,
-          is_deleted: false,
+          address: branch.location || null,
+          city: branch.area || null,
+          code: branch.id || null,
+          company_id: '00000000-0000-0000-0000-000000000000', // يجب تعيين company_id صحيح
+          geo: coords ? { lat: coords.lat, lng: coords.lng } : null,
+          opening_hours: branch.opening_date || null,
         };
         
         // إدراج في قاعدة البيانات
         const { error } = await supabase
-          .from('branches2')
-          .upsert(branchData, { onConflict: 'id' });
+          .from('branches')
+          .insert(branchData);
         
         if (error) {
           console.error(`❌ خطأ في إدراج ${branch.name}:`, error);
