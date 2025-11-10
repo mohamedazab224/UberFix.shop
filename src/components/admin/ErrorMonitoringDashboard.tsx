@@ -12,11 +12,15 @@ interface ErrorLog {
   id: string;
   message: string;
   stack?: string;
-  url: string;
+  url?: string;
   user_id?: string;
   user_agent?: string;
-  level: string;
+  level: 'error' | 'warning' | 'info';
   metadata?: any;
+  error_hash?: string;
+  count: number;
+  first_seen_at: string;
+  last_seen_at: string;
   created_at: string;
   resolved_at?: string;
   resolved_by?: string;
@@ -39,8 +43,8 @@ export function ErrorMonitoringDashboard() {
       let query = supabase
         .from('error_logs')
         .select('*')
-        .order('created_at', { ascending: false })
-        .limit(50);
+        .order('last_seen_at', { ascending: false })
+        .limit(100);
 
       if (filter === 'unresolved') {
         query = query.is('resolved_at', null);
@@ -49,7 +53,7 @@ export function ErrorMonitoringDashboard() {
       const { data, error } = await query;
 
       if (error) throw error;
-      setErrors(data || []);
+      setErrors((data || []) as ErrorLog[]);
     } catch (error) {
       console.error('Error fetching logs:', error);
       toast({
@@ -160,12 +164,18 @@ export function ErrorMonitoringDashboard() {
             <Card key={error.id} className={`${error.resolved_at ? 'opacity-60' : ''}`}>
               <CardHeader className="pb-3">
                 <div className="flex items-start justify-between">
-                  <div className="flex items-center gap-2">
+                  <div className="flex items-center gap-2 flex-wrap">
                     {getLevelIcon(error.level)}
                     <CardTitle className="text-lg">{error.message}</CardTitle>
                     <Badge variant={getLevelColor(error.level) as any}>
                       {error.level}
                     </Badge>
+                    {error.count > 1 && (
+                      <Badge variant="secondary" className="gap-1">
+                        <AlertCircle className="h-3 w-3" />
+                        {error.count}x
+                      </Badge>
+                    )}
                     {error.resolved_at && (
                       <Badge variant="outline" className="text-green-600">
                         محلول
@@ -184,10 +194,28 @@ export function ErrorMonitoringDashboard() {
                   )}
                 </div>
                 
-                <CardDescription className="flex items-center gap-4 text-sm">
-                  <span>{new Date(error.created_at).toLocaleString('ar-EG')}</span>
-                  <span>•</span>
-                  <span>{error.url}</span>
+                <CardDescription className="space-y-1 text-xs">
+                  <div className="flex items-center gap-2">
+                    <span>أول ظهور: {new Date(error.first_seen_at).toLocaleString('ar-EG')}</span>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <span>آخر ظهور: {new Date(error.last_seen_at).toLocaleString('ar-EG')}</span>
+                  </div>
+                  {error.url && (
+                    <div className="flex items-center gap-2">
+                      <span>الصفحة: {new URL(error.url).pathname}</span>
+                    </div>
+                  )}
+                  {error.user_id && (
+                    <div className="flex items-center gap-2">
+                      <span>معرف المستخدم: {error.user_id.substring(0, 8)}...</span>
+                    </div>
+                  )}
+                  {error.error_hash && (
+                    <div className="flex items-center gap-2 font-mono">
+                      <span>Hash: {error.error_hash.substring(0, 12)}</span>
+                    </div>
+                  )}
                 </CardDescription>
               </CardHeader>
               

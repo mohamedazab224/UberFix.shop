@@ -465,41 +465,56 @@ export type Database = {
       }
       error_logs: {
         Row: {
-          created_at: string
+          count: number | null
+          created_at: string | null
+          error_hash: string | null
+          first_seen_at: string | null
           id: string
+          last_seen_at: string | null
           level: string
           message: string
           metadata: Json | null
           resolved_at: string | null
           resolved_by: string | null
           stack: string | null
-          url: string
+          updated_at: string | null
+          url: string | null
           user_agent: string | null
           user_id: string | null
         }
         Insert: {
-          created_at?: string
+          count?: number | null
+          created_at?: string | null
+          error_hash?: string | null
+          first_seen_at?: string | null
           id?: string
+          last_seen_at?: string | null
           level?: string
           message: string
           metadata?: Json | null
           resolved_at?: string | null
           resolved_by?: string | null
           stack?: string | null
-          url: string
+          updated_at?: string | null
+          url?: string | null
           user_agent?: string | null
           user_id?: string | null
         }
         Update: {
-          created_at?: string
+          count?: number | null
+          created_at?: string | null
+          error_hash?: string | null
+          first_seen_at?: string | null
           id?: string
+          last_seen_at?: string | null
           level?: string
           message?: string
           metadata?: Json | null
           resolved_at?: string | null
           resolved_by?: string | null
           stack?: string | null
-          url?: string
+          updated_at?: string | null
+          url?: string | null
           user_agent?: string | null
           user_id?: string | null
         }
