@@ -18,6 +18,7 @@ import SLADashboard from "./pages/SLADashboard";
 import Requests from "./pages/Requests";
 import AllRequests from "./pages/AllRequests";
 import RequestDetails from "./pages/RequestDetails";
+import RequestLifecycleJourney from "./pages/RequestLifecycleJourney";
 import Vendors from "./pages/Vendors";
 import Reports from "./pages/Reports";
 import Properties from "./pages/Properties";
@@ -130,6 +131,14 @@ const App = () => {
                   <AuthWrapper>
                     <AppLayout>
                       <RequestDetails />
+                    </AppLayout>
+                  </AuthWrapper>
+                } />
+                
+                <Route path="/request-lifecycle" element={
+                  <AuthWrapper>
+                    <AppLayout>
+                      <RequestLifecycleJourney />
                     </AppLayout>
                   </AuthWrapper>
                 } />
