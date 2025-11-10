@@ -19,7 +19,9 @@ const formSchema = z.object({
   property_id: z.string().optional(),
   title: z.string().min(1, "العنوان مطلوب"),
   description: z.string().optional(),
-  client_name: z.string().min(1, "اسم العميل مطلوب"),
+  category_id: z.string().optional(),
+  subcategory_id: z.string().optional(),
+  client_name: z.string().min(1, "اسم المسؤول مطلوب"),
   client_phone: z.string().optional(),
   client_email: z.string().email("بريد إلكتروني غير صحيح").optional().or(z.literal("")),
   location: z.string().min(1, "الموقع مطلوب"),
@@ -43,6 +45,8 @@ export const RequestDetailsStep = ({ selectedServices, onBack }: RequestDetailsS
   const [services, setServices] = useState<Service[]>([]);
   const [properties, setProperties] = useState<any[]>([]);
   const [images, setImages] = useState<string[]>([]);
+  const [categories, setCategories] = useState<any[]>([]);
+  const [subcategories, setSubcategories] = useState<any[]>([]);
 
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
@@ -54,7 +58,27 @@ export const RequestDetailsStep = ({ selectedServices, onBack }: RequestDetailsS
   useEffect(() => {
     fetchServices();
     fetchProperties();
+    fetchCategories();
   }, []);
+
+  const fetchCategories = async () => {
+    const { data } = await supabase
+      .from('categories')
+      .select('*')
+      .eq('is_active', true)
+      .order('sort_order', { ascending: true });
+    if (data) setCategories(data);
+  };
+
+  const fetchSubcategories = async (categoryId: string) => {
+    const { data } = await supabase
+      .from('services')
+      .select('*')
+      .eq('category_id', categoryId)
+      .eq('is_active', true)
+      .order('sort_order', { ascending: true });
+    if (data) setSubcategories(data);
+  };
 
   const fetchServices = async () => {
     const { data } = await supabase
@@ -113,6 +137,7 @@ export const RequestDetailsStep = ({ selectedServices, onBack }: RequestDetailsS
         .insert([{
           company_id: profile.company_id,
           branch_id: branch.id,
+          created_by: user?.id,
           title: values.title,
           description: values.description,
           client_name: values.client_name,
@@ -120,6 +145,8 @@ export const RequestDetailsStep = ({ selectedServices, onBack }: RequestDetailsS
           client_email: values.client_email,
           location: values.location,
           service_type: services.map(s => s.name).join(', '),
+          category_id: values.category_id || null,
+          subcategory_id: values.subcategory_id || null,
           status: 'Open',
           workflow_stage: 'submitted',
           estimated_cost: totalServicePrice + inspectionPrice + taxAmount
@@ -212,10 +239,65 @@ export const RequestDetailsStep = ({ selectedServices, onBack }: RequestDetailsS
 
               <FormField
                 control={form.control}
+                name="category_id"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>نوع الخدمة</FormLabel>
+                    <Select 
+                      onValueChange={(value) => {
+                        field.onChange(value);
+                        form.setValue('subcategory_id', '');
+                        fetchSubcategories(value);
+                      }} 
+                      value={field.value}
+                    >
+                      <FormControl>
+                        <SelectTrigger>
+                          <SelectValue placeholder="اختر نوع الخدمة" />
+                        </SelectTrigger>
+                      </FormControl>
+                      <SelectContent>
+                        {categories.map(cat => (
+                          <SelectItem key={cat.id} value={cat.id}>
+                            {cat.icon_url} {cat.name}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </FormItem>
+                )}
+              />
+
+              <FormField
+                control={form.control}
+                name="subcategory_id"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>الخدمة الفرعية</FormLabel>
+                    <Select onValueChange={field.onChange} value={field.value}>
+                      <FormControl>
+                        <SelectTrigger>
+                          <SelectValue placeholder="اختر الخدمة الفرعية" />
+                        </SelectTrigger>
+                      </FormControl>
+                      <SelectContent>
+                        {subcategories.map(sub => (
+                          <SelectItem key={sub.id} value={sub.id}>
+                            {sub.name} - {sub.base_price} جنيه
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </FormItem>
+                )}
+              />
+
+              <FormField
+                control={form.control}
                 name="client_name"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>اسم العميل *</FormLabel>
+                    <FormLabel>اسم المسؤول *</FormLabel>
                     <FormControl>
                       <Input {...field} />
                     </FormControl>

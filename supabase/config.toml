@@ -69,3 +69,6 @@ verify_jwt = false
 
 [functions.send-whatsapp]
 verify_jwt = true
+
+[functions.send-maintenance-notification]
+verify_jwt = true
