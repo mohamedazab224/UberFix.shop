@@ -928,6 +928,56 @@ export type Database = {
           },
         ]
       }
+      messages: {
+        Row: {
+          body: string
+          created_at: string | null
+          id: string
+          is_archived: boolean | null
+          is_read: boolean | null
+          is_starred: boolean | null
+          parent_message_id: string | null
+          recipient_id: string
+          sender_id: string
+          subject: string
+          updated_at: string | null
+        }
+        Insert: {
+          body: string
+          created_at?: string | null
+          id?: string
+          is_archived?: boolean | null
+          is_read?: boolean | null
+          is_starred?: boolean | null
+          parent_message_id?: string | null
+          recipient_id: string
+          sender_id: string
+          subject: string
+          updated_at?: string | null
+        }
+        Update: {
+          body?: string
+          created_at?: string | null
+          id?: string
+          is_archived?: boolean | null
+          is_read?: boolean | null
+          is_starred?: boolean | null
+          parent_message_id?: string | null
+          recipient_id?: string
+          sender_id?: string
+          subject?: string
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "messages_parent_message_id_fkey"
+            columns: ["parent_message_id"]
+            isOneToOne: false
+            referencedRelation: "messages"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       notifications: {
         Row: {
           created_at: string
@@ -3124,6 +3174,40 @@ export type Database = {
       }
     }
     Views: {
+      dashboard_stats: {
+        Row: {
+          actual_cost: number | null
+          assigned_count: number | null
+          avg_completion_days: number | null
+          completed_requests: number | null
+          completion_rate: number | null
+          high_priority_count: number | null
+          in_progress_count: number | null
+          last_updated: string | null
+          low_priority_count: number | null
+          medium_priority_count: number | null
+          pending_requests: number | null
+          submitted_count: number | null
+          this_month_requests: number | null
+          today_requests: number | null
+          total_budget: number | null
+          total_requests: number | null
+          workflow_completed_count: number | null
+        }
+        Relationships: []
+      }
+      monthly_stats: {
+        Row: {
+          completed_requests: number | null
+          completion_rate: number | null
+          month: string | null
+          pending_requests: number | null
+          total_actual: number | null
+          total_estimated: number | null
+          total_requests: number | null
+        }
+        Relationships: []
+      }
       vw_cities_public: {
         Row: {
           id: number | null

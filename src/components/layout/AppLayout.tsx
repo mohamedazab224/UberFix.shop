@@ -1,6 +1,5 @@
 import { SidebarProvider, SidebarTrigger } from "@/components/ui/sidebar";
 import { AppSidebar } from "./AppSidebar";
-import { ChatBot } from "@/components/chatbot/ChatBot";
 import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 import { NotificationsList } from "@/components/notifications/NotificationsList";
@@ -203,11 +202,6 @@ export function AppLayout({ children }: AppLayoutProps) {
               {children}
             </div>
           </main>
-        </div>
-        
-        {/* ChatBot - Fixed positioning */}
-        <div className="fixed bottom-4 left-4 z-40">
-          <ChatBot />
         </div>
       </div>
     </SidebarProvider>

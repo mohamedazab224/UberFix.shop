@@ -13,7 +13,8 @@ import {
   PlayCircle,
   Activity,
   ListChecks,
-  Clock
+  Clock,
+  Mail
 } from "lucide-react";
 import { useMaintenanceRequests } from "@/hooks/useMaintenanceRequests";
 
@@ -46,6 +47,11 @@ const items = [
     label: "كل الطلبات",
     href: "/all-requests",
     showBadge: true
+  },
+  {
+    icon: Mail,
+    label: "صندوق البريد",
+    href: "/inbox"
   },
   {
     icon: Users,
