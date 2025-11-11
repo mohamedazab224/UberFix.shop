@@ -20,6 +20,7 @@ import AllRequests from "./pages/AllRequests";
 import RequestDetails from "./pages/RequestDetails";
 import RequestLifecycleJourney from "./pages/RequestLifecycleJourney";
 import Vendors from "./pages/Vendors";
+import VendorDetails from "./pages/VendorDetails";
 import Reports from "./pages/Reports";
 import Properties from "./pages/Properties";
 import AddProperty from "./pages/properties/AddProperty";
@@ -156,6 +157,14 @@ const App = () => {
                   <AuthWrapper>
                     <AppLayout>
                       <Vendors />
+                    </AppLayout>
+                  </AuthWrapper>
+                } />
+                
+                <Route path="/vendors/:id" element={
+                  <AuthWrapper>
+                    <AppLayout>
+                      <VendorDetails />
                     </AppLayout>
                   </AuthWrapper>
                 } />

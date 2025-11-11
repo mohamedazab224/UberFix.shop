@@ -2,7 +2,8 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { Star, Phone, MapPin, Clock, Shield, Award } from "lucide-react";
+import { Star, Phone, MapPin, Clock, Shield, Award, Eye } from "lucide-react";
+import { useNavigate } from "react-router-dom";
 
 interface VendorCardProps {
   vendor: {
@@ -24,6 +25,8 @@ interface VendorCardProps {
 }
 
 export function VendorCard({ vendor, onContact, onAssign }: VendorCardProps) {
+  const navigate = useNavigate();
+  
   const statusConfig = {
     available: { label: "متاح", className: "bg-green-600 text-primary-foreground" },
     busy: { label: "مشغول", className: "bg-yellow-600 text-primary-foreground" },
@@ -93,15 +96,21 @@ export function VendorCard({ vendor, onContact, onAssign }: VendorCardProps) {
           <Button 
             variant="outline" 
             size="sm" 
-            className="flex-1"
+            onClick={() => navigate(`/vendors/${vendor.id}`)}
+          >
+            <Eye className="h-4 w-4 ml-2" />
+            التفاصيل
+          </Button>
+          <Button 
+            variant="outline" 
+            size="sm"
             onClick={() => onContact(vendor.id)}
           >
             <Phone className="h-4 w-4 ml-2" />
             اتصال
           </Button>
           <Button 
-            size="sm" 
-            className="flex-1"
+            size="sm"
             onClick={() => onAssign(vendor.id)}
             disabled={currentStatus === "offline"}
           >

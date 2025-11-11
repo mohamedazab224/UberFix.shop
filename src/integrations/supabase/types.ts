@@ -2839,6 +2839,44 @@ export type Database = {
         }
         Relationships: []
       }
+      vendor_location_history: {
+        Row: {
+          accuracy: number | null
+          created_at: string
+          id: string
+          latitude: number
+          longitude: number
+          recorded_at: string
+          vendor_id: string
+        }
+        Insert: {
+          accuracy?: number | null
+          created_at?: string
+          id?: string
+          latitude: number
+          longitude: number
+          recorded_at?: string
+          vendor_id: string
+        }
+        Update: {
+          accuracy?: number | null
+          created_at?: string
+          id?: string
+          latitude?: number
+          longitude?: number
+          recorded_at?: string
+          vendor_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "vendor_location_history_vendor_id_fkey"
+            columns: ["vendor_id"]
+            isOneToOne: false
+            referencedRelation: "vendors"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       vendor_locations: {
         Row: {
           address: string | null
@@ -2877,9 +2915,14 @@ export type Database = {
           address: string | null
           company_name: string | null
           created_at: string
+          current_latitude: number | null
+          current_longitude: number | null
           email: string | null
           experience_years: number | null
           id: string
+          is_tracking_enabled: boolean | null
+          location_updated_at: string | null
+          map_icon: string | null
           name: string
           phone: string | null
           profile_image: string | null
@@ -2894,9 +2937,14 @@ export type Database = {
           address?: string | null
           company_name?: string | null
           created_at?: string
+          current_latitude?: number | null
+          current_longitude?: number | null
           email?: string | null
           experience_years?: number | null
           id?: string
+          is_tracking_enabled?: boolean | null
+          location_updated_at?: string | null
+          map_icon?: string | null
           name: string
           phone?: string | null
           profile_image?: string | null
@@ -2911,9 +2959,14 @@ export type Database = {
           address?: string | null
           company_name?: string | null
           created_at?: string
+          current_latitude?: number | null
+          current_longitude?: number | null
           email?: string | null
           experience_years?: number | null
           id?: string
+          is_tracking_enabled?: boolean | null
+          location_updated_at?: string | null
+          map_icon?: string | null
           name?: string
           phone?: string | null
           profile_image?: string | null
