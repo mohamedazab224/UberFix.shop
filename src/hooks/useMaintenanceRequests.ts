@@ -69,28 +69,11 @@ export function useMaintenanceRequests() {
         return;
       }
 
-      // جرب الجدول الجديد أولاً
-      let data, error;
-      
-      const result = await supabase
+      // استعلام واحد محسّن بدون تكرار
+      const { data, error } = await supabase
         .from('maintenance_requests')
         .select('*')
-        .order('created_at', { ascending: false })
-        .limit(1);
-        
-      // إذا نجح، استخدمه
-      if (!result.error) {
-        const fullResult = await supabase
-          .from('maintenance_requests')
-          .select('*')
-          .order('created_at', { ascending: false });
-        data = fullResult.data;
-        error = fullResult.error;
-      } else {
-        // وإلا، لا توجد بيانات
-        data = [];
-        error = null;
-      }
+        .order('created_at', { ascending: false });
 
       if (error) throw error;
       setRequests(data || []);
@@ -352,21 +335,24 @@ export function useMaintenanceRequests() {
   useEffect(() => {
     fetchRequests();
 
-    // إضافة realtime subscription
+    // إضافة realtime subscription مع cleanup صحيح
     const channel = supabase
       .channel('maintenance-requests-changes')
       .on('postgres_changes', 
         { event: '*', schema: 'public', table: 'maintenance_requests' },
-        () => {
-          console.log('🔄 Maintenance requests changed, refetching...');
+        (payload) => {
+          console.log('🔄 Maintenance requests changed:', payload.eventType);
           fetchRequests();
         }
       )
       .subscribe();
 
+    // Cleanup function محسّنة
     return () => {
       console.log('🧹 Cleaning up maintenance requests subscription');
-      supabase.removeChannel(channel);
+      channel.unsubscribe().then(() => {
+        supabase.removeChannel(channel);
+      });
     };
   }, []);
 
