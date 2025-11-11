@@ -1,13 +1,37 @@
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Facebook, Twitter, Instagram, Linkedin, Mail, Phone, MapPin, Download } from "lucide-react";
+import { Link } from "react-router-dom";
 
 export const Footer = () => {
   const footerLinks = {
-    services: ["إدارة الصيانة", "إدارة العقارات", "التقارير والتحليلات", "إدارة الموردين", "نظام المواعيد"],
-    support: ["مركز المساعدة", "الدعم الفني", "التدريب", "الأسئلة الشائعة", "تواصل معنا"],
-    company: ["عن الشركة", "فريق العمل", "الشراكات", "الوظائف", "الأخبار"],
-    legal: ["شروط الاستخدام", "سياسة الخصوصية", "سياسة الإرجاع", "الأمان والحماية"],
+    services: [
+      { label: "إدارة الصيانة", href: "#" },
+      { label: "إدارة العقارات", href: "#" },
+      { label: "التقارير والتحليلات", href: "#" },
+      { label: "إدارة الموردين", href: "#" },
+      { label: "نظام المواعيد", href: "#" }
+    ],
+    support: [
+      { label: "مركز المساعدة", href: "#" },
+      { label: "الدعم الفني", href: "#" },
+      { label: "التدريب", href: "#" },
+      { label: "الأسئلة الشائعة", href: "#" },
+      { label: "تواصل معنا", href: "#" }
+    ],
+    company: [
+      { label: "عن الشركة", href: "/about" },
+      { label: "فريق العمل", href: "#" },
+      { label: "الشراكات", href: "#" },
+      { label: "الوظائف", href: "#" },
+      { label: "الأخبار", href: "#" }
+    ],
+    legal: [
+      { label: "شروط الاستخدام", href: "/terms-of-service" },
+      { label: "سياسة الخصوصية", href: "/privacy-policy" },
+      { label: "سياسة الإرجاع", href: "#" },
+      { label: "الأمان والحماية", href: "#" }
+    ],
   };
 
   const socialLinks = [
@@ -86,12 +110,12 @@ export const Footer = () => {
             <ul className="space-y-2">
               {footerLinks.services.map((link, index) => (
                 <li key={index}>
-                  <a
-                    href="#"
+                  <Link
+                    to={link.href}
                     className="text-sm text-primary-foreground/70 hover:text-primary-foreground transition-colors"
                   >
-                    {link}
-                  </a>
+                    {link.label}
+                  </Link>
                 </li>
               ))}
             </ul>
@@ -103,12 +127,12 @@ export const Footer = () => {
             <ul className="space-y-2">
               {footerLinks.support.map((link, index) => (
                 <li key={index}>
-                  <a
-                    href="#"
+                  <Link
+                    to={link.href}
                     className="text-sm text-primary-foreground/70 hover:text-primary-foreground transition-colors"
                   >
-                    {link}
-                  </a>
+                    {link.label}
+                  </Link>
                 </li>
               ))}
             </ul>
@@ -120,12 +144,12 @@ export const Footer = () => {
             <ul className="space-y-2 mb-6">
               {footerLinks.company.map((link, index) => (
                 <li key={index}>
-                  <a
-                    href="#"
+                  <Link
+                    to={link.href}
                     className="text-sm text-primary-foreground/70 hover:text-primary-foreground transition-colors"
                   >
-                    {link}
-                  </a>
+                    {link.label}
+                  </Link>
                 </li>
               ))}
             </ul>
@@ -134,12 +158,12 @@ export const Footer = () => {
             <ul className="space-y-2">
               {footerLinks.legal.map((link, index) => (
                 <li key={index}>
-                  <a
-                    href="#"
+                  <Link
+                    to={link.href}
                     className="text-sm text-primary-foreground/70 hover:text-primary-foreground transition-colors"
                   >
-                    {link}
-                  </a>
+                    {link.label}
+                  </Link>
                 </li>
               ))}
             </ul>

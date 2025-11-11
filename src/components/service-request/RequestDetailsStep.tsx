@@ -8,21 +8,27 @@ import { Form, FormControl, FormField, FormItem, FormLabel } from "@/components/
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 import { useNavigate } from "react-router-dom";
-import { ArrowRight, Loader2 } from "lucide-react";
+import { ArrowRight, Loader2, MapPin } from "lucide-react";
 import { ImageUpload } from "@/components/forms/ImageUpload";
+import { LocationPicker } from "@/components/forms/LocationPicker";
 import type { Service } from "@/hooks/useServices";
 
 const formSchema = z.object({
   property_id: z.string().optional(),
   title: z.string().min(1, "العنوان مطلوب"),
   description: z.string().optional(),
-  client_name: z.string().min(1, "اسم العميل مطلوب"),
+  category_id: z.string().optional(),
+  subcategory_id: z.string().optional(),
+  client_name: z.string().min(1, "اسم المسؤول مطلوب"),
   client_phone: z.string().optional(),
   client_email: z.string().email("بريد إلكتروني غير صحيح").optional().or(z.literal("")),
   location: z.string().min(1, "الموقع مطلوب"),
+  latitude: z.number().optional(),
+  longitude: z.number().optional(),
   address: z.string().optional(),
   preferred_date: z.string().optional(),
   preferred_time: z.string().optional(),
@@ -43,6 +49,9 @@ export const RequestDetailsStep = ({ selectedServices, onBack }: RequestDetailsS
   const [services, setServices] = useState<Service[]>([]);
   const [properties, setProperties] = useState<any[]>([]);
   const [images, setImages] = useState<string[]>([]);
+  const [categories, setCategories] = useState<any[]>([]);
+  const [subcategories, setSubcategories] = useState<any[]>([]);
+  const [showLocationPicker, setShowLocationPicker] = useState(false);
 
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
@@ -54,7 +63,27 @@ export const RequestDetailsStep = ({ selectedServices, onBack }: RequestDetailsS
   useEffect(() => {
     fetchServices();
     fetchProperties();
+    fetchCategories();
   }, []);
+
+  const fetchCategories = async () => {
+    const { data } = await supabase
+      .from('categories')
+      .select('*')
+      .eq('is_active', true)
+      .order('sort_order', { ascending: true });
+    if (data) setCategories(data);
+  };
+
+  const fetchSubcategories = async (categoryId: string) => {
+    const { data } = await supabase
+      .from('services')
+      .select('*')
+      .eq('category_id', categoryId)
+      .eq('is_active', true)
+      .order('sort_order', { ascending: true });
+    if (data) setSubcategories(data);
+  };
 
   const fetchServices = async () => {
     const { data } = await supabase
@@ -72,84 +101,110 @@ export const RequestDetailsStep = ({ selectedServices, onBack }: RequestDetailsS
     if (data) setProperties(data);
   };
 
+  const handleLocationSelect = (lat: number, lng: number, address?: string) => {
+    form.setValue('latitude', lat);
+    form.setValue('longitude', lng);
+    if (address) {
+      form.setValue('location', address);
+    }
+    setShowLocationPicker(false);
+    toast({
+      title: "تم تحديد الموقع",
+      description: address || `${lat.toFixed(6)}, ${lng.toFixed(6)}`,
+    });
+  };
+
   const onSubmit = async (values: z.infer<typeof formSchema>) => {
+    console.log('Submit started', values);
     setIsSubmitting(true);
     try {
       const { data: { user } } = await supabase.auth.getUser();
       
+      if (!user) {
+        throw new Error('يجب تسجيل الدخول لإنشاء طلب');
+      }
+
       // حساب التكاليف
-      const totalServicePrice = services.reduce((sum, s) => sum + Number(s.base_price), 0);
+      const totalServicePrice = services.reduce((sum, s) => sum + Number(s.base_price || 0), 0);
       const inspectionPrice = services.some(s => s.requires_inspection) 
         ? services.find(s => s.requires_inspection)?.inspection_price || 0 
         : 0;
       const taxAmount = (totalServicePrice + inspectionPrice) * 0.14;
 
-      // إنشاء طلب الصيانة - نحتاج company_id و branch_id
-      const { data: userData } = await supabase.auth.getUser();
-      const { data: profile } = await supabase
+      // جلب بيانات المستخدم
+      const { data: profile, error: profileError } = await supabase
         .from('profiles')
         .select('company_id')
-        .eq('id', userData.user?.id)
+        .eq('id', user.id)
         .single();
 
-      if (!profile?.company_id) {
-        throw new Error('لم يتم العثور على الشركة');
+      if (profileError || !profile?.company_id) {
+        console.error('Profile error:', profileError);
+        throw new Error('لم يتم العثور على بيانات الشركة. يرجى التواصل مع المسؤول.');
       }
 
       // جلب أول فرع للشركة
-      const { data: branch } = await supabase
+      const { data: branch, error: branchError } = await supabase
         .from('branches')
         .select('id')
         .eq('company_id', profile.company_id)
         .limit(1)
         .single();
 
-      if (!branch) {
-        throw new Error('لم يتم العثور على فرع');
+      if (branchError || !branch) {
+        console.error('Branch error:', branchError);
+        throw new Error('لم يتم العثور على فرع للشركة. يرجى إنشاء فرع أولاً.');
       }
+
+      // إعداد البيانات للإرسال
+      const requestData = {
+        company_id: profile.company_id,
+        branch_id: branch.id,
+        created_by: user.id,
+        title: values.title,
+        description: values.description || null,
+        client_name: values.client_name,
+        client_phone: values.client_phone || null,
+        client_email: values.client_email || null,
+        location: values.location,
+        latitude: values.latitude || null,
+        longitude: values.longitude || null,
+        service_type: services.map(s => s.name).join(', '),
+        category_id: values.category_id || null,
+        subcategory_id: values.subcategory_id || null,
+        property_id: values.property_id || null,
+        status: 'Open' as const,
+        workflow_stage: 'submitted',
+        estimated_cost: totalServicePrice + inspectionPrice + taxAmount
+      };
+
+      console.log('Submitting request with data:', requestData);
 
       const { data: request, error: requestError } = await supabase
         .from('maintenance_requests')
-        .insert([{
-          company_id: profile.company_id,
-          branch_id: branch.id,
-          title: values.title,
-          description: values.description,
-          client_name: values.client_name,
-          client_phone: values.client_phone,
-          client_email: values.client_email,
-          location: values.location,
-          service_type: services.map(s => s.name).join(', '),
-          status: 'Open',
-          workflow_stage: 'submitted',
-          estimated_cost: totalServicePrice + inspectionPrice + taxAmount
-        }])
+        .insert([requestData])
         .select()
         .single();
 
-      if (requestError) throw requestError;
+      if (requestError) {
+        console.error('Submit error:', requestError);
+        throw new Error(`فشل في إنشاء الطلب: ${requestError.message}`);
+      }
 
-      // يمكن إضافة خطوط الخدمة لاحقاً عندما يتوفر الجدول
-      // const serviceLines = services.map(service => ({
-      //   request_id: request.id,
-      //   service_id: service.id,
-      //   quantity: 1,
-      //   unit_price: service.base_price,
-      //   tax_rate: 0.14,
-      //   total_amount: Number(service.base_price) * 1.14
-      // }));
+      console.log('Request created successfully:', request);
 
       toast({
-        title: "تم إنشاء الطلب بنجاح",
-        description: "سيتم التواصل معك قريباً",
+        title: "✅ تم إنشاء الطلب بنجاح",
+        description: `رقم الطلب: ${request.id.substring(0, 8)}`,
       });
 
       navigate('/requests');
     } catch (error) {
       console.error('Error creating request:', error);
+      const errorMessage = error instanceof Error ? error.message : 'حدث خطأ غير متوقع';
       toast({
-        title: "خطأ",
-        description: "فشل في إنشاء الطلب",
+        title: "❌ خطأ في إنشاء الطلب",
+        description: errorMessage,
         variant: "destructive",
       });
     } finally {
@@ -212,10 +267,65 @@ export const RequestDetailsStep = ({ selectedServices, onBack }: RequestDetailsS
 
               <FormField
                 control={form.control}
+                name="category_id"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>الخدمة</FormLabel>
+                    <Select 
+                      onValueChange={(value) => {
+                        field.onChange(value);
+                        form.setValue('subcategory_id', '');
+                        fetchSubcategories(value);
+                      }} 
+                      value={field.value}
+                    >
+                      <FormControl>
+                        <SelectTrigger>
+                          <SelectValue placeholder="اختر نوع الخدمة" />
+                        </SelectTrigger>
+                      </FormControl>
+                      <SelectContent>
+                        {categories.map(cat => (
+                          <SelectItem key={cat.id} value={cat.id}>
+                            {cat.icon_url} {cat.name}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </FormItem>
+                )}
+              />
+
+              <FormField
+                control={form.control}
+                name="subcategory_id"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>الخدمة الفرعية</FormLabel>
+                    <Select onValueChange={field.onChange} value={field.value}>
+                      <FormControl>
+                        <SelectTrigger>
+                          <SelectValue placeholder="اختر الخدمة الفرعية" />
+                        </SelectTrigger>
+                      </FormControl>
+                      <SelectContent>
+                        {subcategories.map(sub => (
+                          <SelectItem key={sub.id} value={sub.id}>
+                            {sub.name} - {sub.base_price} جنيه
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </FormItem>
+                )}
+              />
+
+              <FormField
+                control={form.control}
                 name="client_name"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>اسم العميل *</FormLabel>
+                    <FormLabel>اسم المسؤول *</FormLabel>
                     <FormControl>
                       <Input {...field} />
                     </FormControl>
@@ -255,9 +365,28 @@ export const RequestDetailsStep = ({ selectedServices, onBack }: RequestDetailsS
                 render={({ field }) => (
                   <FormItem>
                     <FormLabel>الموقع *</FormLabel>
-                    <FormControl>
-                      <Input {...field} />
-                    </FormControl>
+                    <div className="flex gap-2">
+                      <FormControl>
+                        <Input {...field} />
+                      </FormControl>
+                      <Dialog open={showLocationPicker} onOpenChange={setShowLocationPicker}>
+                        <DialogTrigger asChild>
+                          <Button type="button" variant="outline" size="icon">
+                            <MapPin className="h-4 w-4" />
+                          </Button>
+                        </DialogTrigger>
+                        <DialogContent className="max-w-4xl">
+                          <DialogHeader>
+                            <DialogTitle>تحديد الموقع على الخريطة</DialogTitle>
+                          </DialogHeader>
+                          <LocationPicker 
+                            onLocationSelect={handleLocationSelect}
+                            initialLatitude={form.watch('latitude')}
+                            initialLongitude={form.watch('longitude')}
+                          />
+                        </DialogContent>
+                      </Dialog>
+                    </div>
                   </FormItem>
                 )}
               />

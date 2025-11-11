@@ -90,15 +90,26 @@ export default function Vendors() {
   });
 
   const handleContact = (vendorId: string) => {
-    const vendor = mockVendors.find(v => v.id === vendorId);
-    if (vendor) {
+    const vendor = vendorList.find(v => v.id === vendorId);
+    if (vendor && vendor.phone) {
       window.open(`tel:${vendor.phone}`);
+    } else {
+      toast({
+        title: "لا يوجد رقم هاتف",
+        description: "لم يتم تسجيل رقم هاتف لهذا الفني",
+        variant: "destructive"
+      });
     }
   };
 
   const handleAssign = (vendorId: string) => {
-    const vendor = mockVendors.find(v => v.id === vendorId);
-    alert(`تم تعيين ${vendor?.name} للمهمة`);
+    const vendor = vendorList.find(v => v.id === vendorId);
+    if (vendor) {
+      toast({
+        title: "تم التعيين",
+        description: `تم تعيين ${vendor.name} للمهمة`
+      });
+    }
   };
 
   const stats = {
@@ -248,33 +259,45 @@ export default function Vendors() {
       </Card>
 
       {/* Vendors Grid */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-        {filteredVendors.map((vendor: any) => (
-          <VendorCard
-            key={vendor.id}
-            vendor={{
-              id: vendor.id,
-              name: vendor.name,
-              specialty: vendor.specialty,
-              rating: vendor.rating,
-              completedJobs: vendor.completedJobs || 0,
-              location: vendor.address || vendor.location || 'غير محدد',
-              phone: vendor.phone || '',
-              status: vendor.status,
-              unitRate: vendor.unit_rate ? `${vendor.unit_rate} جنيه/وحدة` : vendor.unitRate || '0 جنيه/وحدة',
-              verified: vendor.certifications ? vendor.certifications.length > 0 : vendor.verified || false,
-              responseTime: vendor.responseTime || '30 دقيقة'
-            }}
-            onContact={handleContact}
-            onAssign={handleAssign}
-          />
-        ))}
-      </div>
+      {loading ? (
+        <div className="text-center py-12">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary mx-auto"></div>
+          <p className="mt-4 text-muted-foreground">جاري تحميل البيانات...</p>
+        </div>
+      ) : (
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+          {filteredVendors.map((vendor: any) => (
+            <VendorCard
+              key={vendor.id}
+              vendor={{
+                id: vendor.id,
+                name: vendor.name,
+                specialty: vendor.specialty || (vendor.specialization && vendor.specialization[0]) || 'غير محدد',
+                rating: vendor.rating || 0,
+                completedJobs: vendor.completedJobs || vendor.completed_jobs || 0,
+                location: vendor.address || vendor.location || 'غير محدد',
+                phone: vendor.phone || '',
+                status: vendor.status || 'offline',
+                unitRate: vendor.unit_rate ? `${vendor.unit_rate} جنيه/وحدة` : vendor.unitRate || '0 جنيه/وحدة',
+                verified: vendor.certifications ? vendor.certifications.length > 0 : vendor.verified || false,
+                responseTime: vendor.responseTime || vendor.response_time || '30 دقيقة'
+              }}
+              onContact={handleContact}
+              onAssign={handleAssign}
+            />
+          ))}
+        </div>
+      )}
 
-      {filteredVendors.length === 0 && (
+      {!loading && filteredVendors.length === 0 && (
         <Card>
           <CardContent className="text-center py-12">
-            <p className="text-muted-foreground text-lg">لا توجد موردين تطابق معايير البحث</p>
+            <p className="text-muted-foreground text-lg">
+              {error ? 'حدث خطأ في تحميل البيانات' : 'لا توجد فنيين تطابق معايير البحث'}
+            </p>
+            {error && (
+              <p className="text-sm text-destructive mt-2">{error}</p>
+            )}
           </CardContent>
         </Card>
       )}

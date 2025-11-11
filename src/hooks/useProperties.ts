@@ -4,6 +4,7 @@ import { supabase } from '@/integrations/supabase/client';
 export interface Property {
   id: string;
   name: string;
+  code?: string;
   type: string;
   status: string;
   address: string;
@@ -19,6 +20,10 @@ export interface Property {
   last_inspection_date?: string;
   next_inspection_date?: string;
   icon_url?: string;
+  qr_code_data?: string;
+  city_id?: number;
+  district_id?: number;
+  images?: string[];
   created_at: string;
   updated_at: string;
 }

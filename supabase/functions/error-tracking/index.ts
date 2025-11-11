@@ -9,13 +9,10 @@ const corsHeaders = {
 interface ErrorLog {
   message: string;
   stack?: string;
-  url: string;
-  user_id?: string;
+  url?: string;
   user_agent?: string;
-  timestamp?: string;
-  level: 'error' | 'warning' | 'info' | 'warn';
+  level: 'error' | 'warning' | 'info';
   metadata?: Record<string, any>;
-  created_at?: string;
 }
 
 Deno.serve(async (req) => {
@@ -64,84 +61,71 @@ Deno.serve(async (req) => {
     const supabase = createClient(supabaseUrl, supabaseKey);
 
     const body = await req.json();
-    
-    // دعم إرسال خطأ واحد أو مصفوفة أخطاء
-    const errors = body.errors || [body];
-    
-    if (!Array.isArray(errors) || errors.length === 0) {
-      return new Response(JSON.stringify({ error: 'No errors provided' }), {
-        status: 400,
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' }
-      });
-    }
+    const errors = Array.isArray(body) ? body : [body];
 
-    // معالجة وتنظيف كل خطأ مع ربطه بالمستخدم المصادق عليه
-    const sanitizedErrors = errors.map((err: any) => ({
-      message: String(err.message || 'Unknown error').slice(0, 1000),
-      stack: err.stack ? String(err.stack).slice(0, 5000) : undefined,
-      url: err.url ? String(err.url).slice(0, 500) : '',
-      user_id: user.id, // استخدام معرف المستخدم المصادق عليه
-      user_agent: err.user_agent ? String(err.user_agent).slice(0, 500) : undefined,
-      level: ['error', 'warning', 'info', 'warn'].includes(err.level) ? err.level : 'error',
-      metadata: err.metadata || undefined,
-      created_at: err.created_at || new Date().toISOString()
+    // Process and insert errors
+    const errorLogs = errors.map((error: ErrorLog) => ({
+      user_id: user.id,
+      message: error.message || 'Unknown error',
+      stack: error.stack,
+      level: error.level || 'error',
+      url: error.url,
+      user_agent: error.user_agent,
+      metadata: {
+        ...error.metadata,
+        user_email: user.email,
+        timestamp: new Date().toISOString(),
+      },
     }));
 
-    // تسجيل الأخطاء في قاعدة البيانات
-    const { error } = await supabase
+    // Insert errors (trigger will handle grouping and hashing)
+    const { data: insertedErrors, error: insertError } = await supabase
       .from('error_logs')
-      .insert(sanitizedErrors);
+      .insert(errorLogs)
+      .select();
 
-    if (error) {
-      console.error('Error saving log:', error);
+    if (insertError) {
+      console.error('Error inserting logs:', insertError);
       return new Response(
-        JSON.stringify({ success: false, error: 'Failed to save log' }),
-        { 
-          status: 500, 
-          headers: { ...corsHeaders, 'Content-Type': 'application/json' } 
-        }
+        JSON.stringify({ error: 'Failed to save error logs', details: insertError.message }), 
+        { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );
     }
 
-    // إرسال إشعار للمديرين في حالة الأخطاء الحرجة فقط
-    const criticalErrors = sanitizedErrors.filter(e => e.level === 'error');
+    // Get critical errors for notification
+    const criticalErrors = errorLogs.filter(log => log.level === 'error');
+    
     if (criticalErrors.length > 0) {
-      try {
-        // البحث عن المديرين من جدول user_roles
-        const { data: admins } = await supabase
-          .from('user_roles')
-          .select('user_id')
-          .eq('role', 'admin')
-          .limit(10);
+      // Get admin users for notification
+      const { data: adminUsers } = await supabase
+        .from('user_roles')
+        .select('user_id')
+        .in('role', ['admin', 'manager']);
 
-        if (admins && admins.length > 0) {
-          // إرسال إشعار واحد فقط للأخطاء المتعددة
-          const notifications = admins.map(admin => ({
-            recipient_id: admin.user_id,
-            title: 'خطأ تقني في النظام',
-            message: criticalErrors.length === 1 
-              ? `حدث خطأ تقني: ${criticalErrors[0].message.slice(0, 100)}...`
-              : `حدثت ${criticalErrors.length} أخطاء تقنية في النظام`,
-            type: 'error',
-            entity_type: 'system_error',
-            entity_id: null
-          }));
+      if (adminUsers && adminUsers.length > 0) {
+        // Create notifications for admins
+        const notifications = adminUsers.map(admin => ({
+          recipient_id: admin.user_id,
+          title: `🚨 خطأ حرج في النظام`,
+          message: `تم تسجيل ${criticalErrors.length} خطأ حرج. يرجى المراجعة فوراً.`,
+          type: 'error' as const,
+          entity_type: 'error_log',
+          entity_id: insertedErrors?.[0]?.id,
+        }));
 
-          await supabase
-            .from('notifications')
-            .insert(notifications);
-        }
-      } catch (notificationError) {
-        console.error('Error sending admin notifications:', notificationError);
+        await supabase.from('notifications').insert(notifications);
       }
     }
 
+    console.log(`Successfully logged ${errorLogs.length} errors for user ${user.id}`);
+
     return new Response(
-      JSON.stringify({ success: true }),
-      { 
-        status: 200, 
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' } 
-      }
+      JSON.stringify({ 
+        success: true, 
+        logged: insertedErrors?.length || 0,
+        grouped: errorLogs.length - (insertedErrors?.length || 0)
+      }),
+      { status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
     );
 
   } catch (err) {

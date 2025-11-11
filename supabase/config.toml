@@ -63,3 +63,15 @@ verify_jwt = false
 
 [functions.send-invoice-email]
 verify_jwt = false
+
+[functions.twilio-delivery-status]
+verify_jwt = false
+
+[functions.send-whatsapp]
+verify_jwt = true
+
+[functions.send-maintenance-notification]
+verify_jwt = true
+
+[functions.send-twilio-message]
+verify_jwt = false

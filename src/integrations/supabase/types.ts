@@ -465,41 +465,56 @@ export type Database = {
       }
       error_logs: {
         Row: {
-          created_at: string
+          count: number | null
+          created_at: string | null
+          error_hash: string | null
+          first_seen_at: string | null
           id: string
+          last_seen_at: string | null
           level: string
           message: string
           metadata: Json | null
           resolved_at: string | null
           resolved_by: string | null
           stack: string | null
-          url: string
+          updated_at: string | null
+          url: string | null
           user_agent: string | null
           user_id: string | null
         }
         Insert: {
-          created_at?: string
+          count?: number | null
+          created_at?: string | null
+          error_hash?: string | null
+          first_seen_at?: string | null
           id?: string
+          last_seen_at?: string | null
           level?: string
           message: string
           metadata?: Json | null
           resolved_at?: string | null
           resolved_by?: string | null
           stack?: string | null
-          url: string
+          updated_at?: string | null
+          url?: string | null
           user_agent?: string | null
           user_id?: string | null
         }
         Update: {
-          created_at?: string
+          count?: number | null
+          created_at?: string | null
+          error_hash?: string | null
+          first_seen_at?: string | null
           id?: string
+          last_seen_at?: string | null
           level?: string
           message?: string
           metadata?: Json | null
           resolved_at?: string | null
           resolved_by?: string | null
           stack?: string | null
-          url?: string
+          updated_at?: string | null
+          url?: string | null
           user_agent?: string | null
           user_id?: string | null
         }
@@ -702,6 +717,7 @@ export type Database = {
           company_id: string
           created_at: string
           created_by: string | null
+          customer_notes: string | null
           description: string | null
           estimated_cost: number | null
           id: string
@@ -739,6 +755,7 @@ export type Database = {
           company_id: string
           created_at?: string
           created_by?: string | null
+          customer_notes?: string | null
           description?: string | null
           estimated_cost?: number | null
           id?: string
@@ -776,6 +793,7 @@ export type Database = {
           company_id?: string
           created_at?: string
           created_by?: string | null
+          customer_notes?: string | null
           description?: string | null
           estimated_cost?: number | null
           id?: string
@@ -851,6 +869,65 @@ export type Database = {
           },
         ]
       }
+      message_logs: {
+        Row: {
+          created_at: string
+          delivered_at: string | null
+          error_message: string | null
+          external_id: string | null
+          id: string
+          message_content: string
+          message_type: string
+          metadata: Json | null
+          provider: string
+          recipient: string
+          request_id: string | null
+          sent_at: string | null
+          status: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          delivered_at?: string | null
+          error_message?: string | null
+          external_id?: string | null
+          id?: string
+          message_content: string
+          message_type: string
+          metadata?: Json | null
+          provider?: string
+          recipient: string
+          request_id?: string | null
+          sent_at?: string | null
+          status?: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          delivered_at?: string | null
+          error_message?: string | null
+          external_id?: string | null
+          id?: string
+          message_content?: string
+          message_type?: string
+          metadata?: Json | null
+          provider?: string
+          recipient?: string
+          request_id?: string | null
+          sent_at?: string | null
+          status?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "message_logs_request_id_fkey"
+            columns: ["request_id"]
+            isOneToOne: false
+            referencedRelation: "maintenance_requests"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       notifications: {
         Row: {
           created_at: string
@@ -858,12 +935,15 @@ export type Database = {
           entity_type: string | null
           id: string
           message: string
+          message_log_id: string | null
           read_at: string | null
           recipient_id: string
           sender_id: string | null
+          sms_sent: boolean | null
           title: string
           type: string
           updated_at: string
+          whatsapp_sent: boolean | null
         }
         Insert: {
           created_at?: string
@@ -871,12 +951,15 @@ export type Database = {
           entity_type?: string | null
           id?: string
           message: string
+          message_log_id?: string | null
           read_at?: string | null
           recipient_id: string
           sender_id?: string | null
+          sms_sent?: boolean | null
           title: string
           type?: string
           updated_at?: string
+          whatsapp_sent?: boolean | null
         }
         Update: {
           created_at?: string
@@ -884,14 +967,25 @@ export type Database = {
           entity_type?: string | null
           id?: string
           message?: string
+          message_log_id?: string | null
           read_at?: string | null
           recipient_id?: string
           sender_id?: string | null
+          sms_sent?: boolean | null
           title?: string
           type?: string
           updated_at?: string
+          whatsapp_sent?: boolean | null
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "notifications_message_log_id_fkey"
+            columns: ["message_log_id"]
+            isOneToOne: false
+            referencedRelation: "message_logs"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       profiles: {
         Row: {
@@ -1266,11 +1360,15 @@ export type Database = {
           amenities: string[] | null
           area: number | null
           bathrooms: number | null
+          city_id: number | null
+          code: string | null
           created_at: string
           description: string | null
+          district_id: number | null
           floors: number | null
           icon_url: string | null
           id: string
+          images: string[] | null
           last_inspection_date: string | null
           latitude: number | null
           longitude: number | null
@@ -1293,11 +1391,15 @@ export type Database = {
           amenities?: string[] | null
           area?: number | null
           bathrooms?: number | null
+          city_id?: number | null
+          code?: string | null
           created_at?: string
           description?: string | null
+          district_id?: number | null
           floors?: number | null
           icon_url?: string | null
           id?: string
+          images?: string[] | null
           last_inspection_date?: string | null
           latitude?: number | null
           longitude?: number | null
@@ -1320,11 +1422,15 @@ export type Database = {
           amenities?: string[] | null
           area?: number | null
           bathrooms?: number | null
+          city_id?: number | null
+          code?: string | null
           created_at?: string
           description?: string | null
+          district_id?: number | null
           floors?: number | null
           icon_url?: string | null
           id?: string
+          images?: string[] | null
           last_inspection_date?: string | null
           latitude?: number | null
           longitude?: number | null
@@ -1342,7 +1448,29 @@ export type Database = {
           updated_at?: string
           value?: number | null
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "properties_city_id_fkey"
+            columns: ["city_id"]
+            isOneToOne: false
+            referencedRelation: "cities"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "properties_city_id_fkey"
+            columns: ["city_id"]
+            isOneToOne: false
+            referencedRelation: "vw_cities_public"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "properties_district_id_fkey"
+            columns: ["district_id"]
+            isOneToOne: false
+            referencedRelation: "districts"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       quick_maintenance_requests: {
         Row: {
@@ -2348,6 +2476,39 @@ export type Database = {
           },
         ]
       }
+      technician_locations: {
+        Row: {
+          created_at: string | null
+          icon: string | null
+          id: string
+          latitude: string | null
+          longitude: string | null
+          name: string
+          specialization: string | null
+          status: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          icon?: string | null
+          id: string
+          latitude?: string | null
+          longitude?: string | null
+          name: string
+          specialization?: string | null
+          status?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          icon?: string | null
+          id?: string
+          latitude?: string | null
+          longitude?: string | null
+          name?: string
+          specialization?: string | null
+          status?: string | null
+        }
+        Relationships: []
+      }
       technician_progress: {
         Row: {
           created_at: string | null
@@ -2711,6 +2872,44 @@ export type Database = {
         }
         Relationships: []
       }
+      vendor_location_history: {
+        Row: {
+          accuracy: number | null
+          created_at: string
+          id: string
+          latitude: number
+          longitude: number
+          recorded_at: string
+          vendor_id: string
+        }
+        Insert: {
+          accuracy?: number | null
+          created_at?: string
+          id?: string
+          latitude: number
+          longitude: number
+          recorded_at?: string
+          vendor_id: string
+        }
+        Update: {
+          accuracy?: number | null
+          created_at?: string
+          id?: string
+          latitude?: number
+          longitude?: number
+          recorded_at?: string
+          vendor_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "vendor_location_history_vendor_id_fkey"
+            columns: ["vendor_id"]
+            isOneToOne: false
+            referencedRelation: "vendors"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       vendor_locations: {
         Row: {
           address: string | null
@@ -2749,9 +2948,14 @@ export type Database = {
           address: string | null
           company_name: string | null
           created_at: string
+          current_latitude: number | null
+          current_longitude: number | null
           email: string | null
           experience_years: number | null
           id: string
+          is_tracking_enabled: boolean | null
+          location_updated_at: string | null
+          map_icon: string | null
           name: string
           phone: string | null
           profile_image: string | null
@@ -2766,9 +2970,14 @@ export type Database = {
           address?: string | null
           company_name?: string | null
           created_at?: string
+          current_latitude?: number | null
+          current_longitude?: number | null
           email?: string | null
           experience_years?: number | null
           id?: string
+          is_tracking_enabled?: boolean | null
+          location_updated_at?: string | null
+          map_icon?: string | null
           name: string
           phone?: string | null
           profile_image?: string | null
@@ -2783,9 +2992,14 @@ export type Database = {
           address?: string | null
           company_name?: string | null
           created_at?: string
+          current_latitude?: number | null
+          current_longitude?: number | null
           email?: string | null
           experience_years?: number | null
           id?: string
+          is_tracking_enabled?: boolean | null
+          location_updated_at?: string | null
+          map_icon?: string | null
           name?: string
           phone?: string | null
           profile_image?: string | null
@@ -2797,6 +3011,65 @@ export type Database = {
           updated_at?: string
         }
         Relationships: []
+      }
+      whatsapp_messages: {
+        Row: {
+          created_at: string
+          delivered_at: string | null
+          error_code: string | null
+          error_message: string | null
+          id: string
+          media_url: string | null
+          message_body: string
+          message_sid: string
+          read_at: string | null
+          recipient_phone: string
+          request_id: string | null
+          sender_id: string | null
+          status: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          delivered_at?: string | null
+          error_code?: string | null
+          error_message?: string | null
+          id?: string
+          media_url?: string | null
+          message_body: string
+          message_sid: string
+          read_at?: string | null
+          recipient_phone: string
+          request_id?: string | null
+          sender_id?: string | null
+          status?: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          delivered_at?: string | null
+          error_code?: string | null
+          error_message?: string | null
+          id?: string
+          media_url?: string | null
+          message_body?: string
+          message_sid?: string
+          read_at?: string | null
+          recipient_phone?: string
+          request_id?: string | null
+          sender_id?: string | null
+          status?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "whatsapp_messages_request_id_fkey"
+            columns: ["request_id"]
+            isOneToOne: false
+            referencedRelation: "maintenance_requests"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       work_tasks: {
         Row: {

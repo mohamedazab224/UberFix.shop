@@ -18,10 +18,14 @@ import SLADashboard from "./pages/SLADashboard";
 import Requests from "./pages/Requests";
 import AllRequests from "./pages/AllRequests";
 import RequestDetails from "./pages/RequestDetails";
+import RequestLifecycleJourney from "./pages/RequestLifecycleJourney";
 import Vendors from "./pages/Vendors";
+import VendorDetails from "./pages/VendorDetails";
 import Reports from "./pages/Reports";
 import Properties from "./pages/Properties";
 import AddProperty from "./pages/properties/AddProperty";
+import EditProperty from "./pages/properties/EditProperty";
+import PropertyDetails from "./pages/properties/PropertyDetails";
 import Appointments from "./pages/Appointments";
 import Invoices from "./pages/Invoices";
 import ServiceMap from "./pages/ServiceMap";
@@ -36,6 +40,8 @@ import ProductionReport from "./pages/ProductionReport";
 import ProductionMonitor from "./pages/ProductionMonitor";
 import NotFound from "./pages/NotFound";
 import About from "./pages/About";
+import PrivacyPolicy from "./pages/PrivacyPolicy";
+import TermsOfService from "./pages/TermsOfService";
 import Services from "./pages/Services";
 import ServiceRequest from "./pages/ServiceRequest";
 import Gallery from "./pages/Gallery";
@@ -47,7 +53,10 @@ import QuickRequest from "./pages/QuickRequest";
 import ExpenseReports from "./pages/ExpenseReports";
 import MaintenanceReports from "./pages/MaintenanceReports";
 import UserManagement from "./pages/admin/UserManagement";
-import EditProperty from "./pages/properties/EditProperty";
+import WhatsAppMessages from "./pages/WhatsAppMessages";
+import MessageLogs from "./pages/MessageLogs";
+import AuthCallback from "./pages/AuthCallback";
+import ForgotPassword from "./pages/ForgotPassword";
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -82,7 +91,11 @@ const App = () => {
                 <Route path="/role-selection" element={<RoleSelection />} />
                 <Route path="/login" element={<Login />} />
                 <Route path="/register" element={<Register />} />
+                <Route path="/forgot-password" element={<ForgotPassword />} />
+                <Route path="/auth/callback" element={<AuthCallback />} />
                 <Route path="/about" element={<About />} />
+                <Route path="/privacy-policy" element={<PrivacyPolicy />} />
+                <Route path="/terms-of-service" element={<TermsOfService />} />
                 <Route path="/services" element={<Services />} />
                 <Route path="/gallery" element={<Gallery />} />
                 <Route path="/projects" element={<Projects />} />
@@ -132,10 +145,26 @@ const App = () => {
                   </AuthWrapper>
                 } />
                 
+                <Route path="/request-lifecycle" element={
+                  <AuthWrapper>
+                    <AppLayout>
+                      <RequestLifecycleJourney />
+                    </AppLayout>
+                  </AuthWrapper>
+                } />
+                
                 <Route path="/vendors" element={
                   <AuthWrapper>
                     <AppLayout>
                       <Vendors />
+                    </AppLayout>
+                  </AuthWrapper>
+                } />
+                
+                <Route path="/vendors/:id" element={
+                  <AuthWrapper>
+                    <AppLayout>
+                      <VendorDetails />
                     </AppLayout>
                   </AuthWrapper>
                 } />
@@ -160,6 +189,14 @@ const App = () => {
                   <AuthWrapper>
                     <AppLayout>
                       <AddProperty />
+                    </AppLayout>
+                  </AuthWrapper>
+                } />
+                
+                <Route path="/properties/:id" element={
+                  <AuthWrapper>
+                    <AppLayout>
+                      <PropertyDetails />
                     </AppLayout>
                   </AuthWrapper>
                 } />
@@ -300,6 +337,22 @@ const App = () => {
                   <AuthWrapper>
                     <AppLayout>
                       <MaintenanceReports />
+                    </AppLayout>
+                  </AuthWrapper>
+                } />
+                
+                <Route path="/whatsapp" element={
+                  <AuthWrapper>
+                    <AppLayout>
+                      <WhatsAppMessages />
+                    </AppLayout>
+                  </AuthWrapper>
+                } />
+                
+                <Route path="/message-logs" element={
+                  <AuthWrapper>
+                    <AppLayout>
+                      <MessageLogs />
                     </AppLayout>
                   </AuthWrapper>
                 } />

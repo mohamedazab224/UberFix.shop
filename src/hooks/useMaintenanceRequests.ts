@@ -115,7 +115,6 @@ export function useMaintenanceRequests() {
       }
       
       // جلب company_id و branch_id من profile المستخدم
-      // الآن كل مستخدم لديه company و branch تلقائياً
       const { data: profile, error: profileError } = await supabase
         .from('profiles')
         .select('company_id')
@@ -145,6 +144,7 @@ export function useMaintenanceRequests() {
           ...requestData,
           created_by: user.id,
           status: 'Open',
+          workflow_stage: 'submitted',
           company_id: profile.company_id,
           branch_id: branch.id
         })
@@ -152,6 +152,34 @@ export function useMaintenanceRequests() {
         .single();
 
       if (error) throw error;
+
+      // إرسال إشعار بإنشاء طلب جديد
+      try {
+        await supabase.functions.invoke('send-maintenance-notification', {
+          body: {
+            request_id: data.id,
+            event_type: 'request_created',
+          }
+        });
+      } catch (notifError) {
+        console.error('Failed to send notification:', notifError);
+      }
+
+      // إرسال رسالة WhatsApp للعميل
+      if (data.client_phone) {
+        try {
+          await supabase.functions.invoke('send-twilio-message', {
+            body: {
+              to: data.client_phone,
+              message: `تم استلام طلب الصيانة الخاص بك بنجاح. رقم الطلب: ${data.id}. سيتم التواصل معك قريباً.`,
+              type: 'whatsapp',
+              requestId: data.id
+            }
+          });
+        } catch (smsError) {
+          console.error('Failed to send WhatsApp message:', smsError);
+        }
+      }
 
       toast({
         title: "✓ تم إنشاء الطلب",
@@ -178,6 +206,13 @@ export function useMaintenanceRequests() {
         throw new Error("يجب تسجيل الدخول أولاً");
       }
 
+      // جلب البيانات القديمة للمقارنة
+      const { data: oldData } = await supabase
+        .from('maintenance_requests')
+        .select('status, workflow_stage, client_phone')
+        .eq('id', id)
+        .single();
+
       const { data, error } = await supabase
         .from('maintenance_requests')
         .update(updates as any)
@@ -186,6 +221,84 @@ export function useMaintenanceRequests() {
         .single();
 
       if (error) throw error;
+
+      // إرسال إشعار عند تغيير الحالة أو المرحلة
+      try {
+        if (oldData) {
+          if (updates.status && updates.status !== oldData.status) {
+            await supabase.functions.invoke('send-maintenance-notification', {
+              body: {
+                request_id: id,
+                old_status: oldData.status,
+                new_status: updates.status,
+                event_type: 'status_changed',
+              }
+            });
+          }
+          
+          if (updates.workflow_stage && updates.workflow_stage !== oldData.workflow_stage) {
+            await supabase.functions.invoke('send-maintenance-notification', {
+              body: {
+                request_id: id,
+                old_stage: oldData.workflow_stage,
+                new_stage: updates.workflow_stage,
+                event_type: 'stage_changed',
+              }
+            });
+
+            // إرسال رسالة WhatsApp للعميل عند تغيير المرحلة
+            if (data.client_phone) {
+              let message = '';
+              switch (updates.workflow_stage) {
+                case 'assigned':
+                  message = `تم تعيين فني لطلب الصيانة رقم ${id}. سيتم التواصل معك قريباً.`;
+                  break;
+                case 'scheduled':
+                  message = `تم جدولة موعد زيارة الفني لطلب الصيانة رقم ${id}.`;
+                  break;
+                case 'in_progress':
+                  message = `الفني في طريقه إليك الآن. طلب رقم ${id}.`;
+                  break;
+                case 'inspection':
+                  message = `جاري فحص المشكلة. طلب رقم ${id}.`;
+                  break;
+                case 'waiting_parts':
+                  message = `في انتظار قطع الغيار. سنبلغك عند وصولها. طلب رقم ${id}.`;
+                  break;
+                case 'completed':
+                  message = `تم إكمال طلب الصيانة رقم ${id} بنجاح. شكراً لثقتك بنا!`;
+                  break;
+              }
+              
+              if (message) {
+                try {
+                  await supabase.functions.invoke('send-twilio-message', {
+                    body: {
+                      to: data.client_phone,
+                      message,
+                      type: 'whatsapp',
+                      requestId: id
+                    }
+                  });
+                } catch (smsError) {
+                  console.error('Failed to send WhatsApp message:', smsError);
+                }
+              }
+            }
+          }
+
+          if (updates.workflow_stage === 'completed') {
+            await supabase.functions.invoke('send-maintenance-notification', {
+              body: {
+                request_id: id,
+                event_type: 'request_completed',
+              }
+            });
+          }
+        }
+      } catch (notifError) {
+        console.error('Failed to send notification:', notifError);
+      }
 
       toast({
         title: "✓ تم التحديث",

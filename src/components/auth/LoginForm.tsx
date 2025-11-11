@@ -1,36 +1,37 @@
 import { useState } from 'react';
+import { useForm } from 'react-hook-form';
+import { zodResolver } from '@hookform/resolvers/zod';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
+import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 import { Loader2, Building2, UserPlus } from 'lucide-react';
 import { FaGoogle, FaFacebook } from 'react-icons/fa';
 import { smartSignup, smartLogin } from '@/lib/smartAuth';
+import { loginFormSchema, registerFormSchema } from '@/lib/validationSchemas';
+import { z } from 'zod';
+
+type LoginFormData = z.infer<typeof loginFormSchema>;
 
 export function LoginForm() {
-  const [email, setEmail] = useState('');
-  const [password, setPassword] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const [isSigningUp, setIsSigningUp] = useState(false);
   const { toast } = useToast();
 
-  const handleLogin = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!email || !password) {
-      toast({
-        title: "خطأ",
-        description: "يرجى إدخال البريد الإلكتروني وكلمة المرور",
-        variant: "destructive",
-      });
-      return;
-    }
+  const loginForm = useForm<LoginFormData>({
+    resolver: zodResolver(loginFormSchema),
+    defaultValues: {
+      email: '',
+      password: '',
+    },
+  });
 
+  const onLogin = async (data: LoginFormData) => {
     setIsLoading(true);
-
     try {
-      const result = await smartLogin(email, password);
+      const result = await smartLogin(data.email, data.password);
       
       if (result.ok) {
         toast({
@@ -61,8 +62,10 @@ export function LoginForm() {
     }
   };
 
-  const handleSignUp = async (e: React.FormEvent) => {
-    e.preventDefault();
+  const handleSignUp = async () => {
+    const email = loginForm.getValues('email');
+    const password = loginForm.getValues('password');
+    
     if (!email || !password) {
       toast({
         title: "خطأ",
@@ -156,48 +159,63 @@ export function LoginForm() {
           <p className="text-muted-foreground">نظام إدارة طلبات الصيانة</p>
         </CardHeader>
         <CardContent>
-          <form onSubmit={handleLogin} className="space-y-4">
-            <div className="space-y-2">
-              <Label htmlFor="email">البريد الإلكتروني</Label>
-              <Input
-                id="email"
-                type="email"
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
-                placeholder="admin@uberfix.shop"
-                required
+          <Form {...loginForm}>
+            <form onSubmit={loginForm.handleSubmit(onLogin)} className="space-y-4">
+              <FormField
+                control={loginForm.control}
+                name="email"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>البريد الإلكتروني</FormLabel>
+                    <FormControl>
+                      <Input
+                        type="email"
+                        placeholder="admin@uberfix.shop"
+                        {...field}
+                      />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
               />
-            </div>
-            <div className="space-y-2">
-              <Label htmlFor="password">كلمة المرور</Label>
-              <Input
-                id="password"
-                type="password"
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
-                placeholder="كلمة المرور"
-                required
+              
+              <FormField
+                control={loginForm.control}
+                name="password"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>كلمة المرور</FormLabel>
+                    <FormControl>
+                      <Input
+                        type="password"
+                        placeholder="كلمة المرور"
+                        {...field}
+                      />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
               />
-            </div>
-            
-            <div className="flex gap-2">
-              <Button type="submit" className="flex-1" disabled={isLoading || isSigningUp}>
-                {isLoading && <Loader2 className="h-4 w-4 animate-spin ml-2" />}
-                تسجيل الدخول
-              </Button>
-              <Button 
-                type="button" 
-                variant="outline" 
-                onClick={handleSignUp}
-                disabled={isLoading || isSigningUp}
-                className="flex-1 gap-2"
-              >
-                {isSigningUp && <Loader2 className="h-4 w-4 animate-spin" />}
-                <UserPlus className="h-4 w-4" />
-                إنشاء حساب
-              </Button>
-            </div>
-          </form>
+              
+              <div className="flex gap-2">
+                <Button type="submit" className="flex-1" disabled={isLoading || isSigningUp}>
+                  {isLoading && <Loader2 className="h-4 w-4 animate-spin ml-2" />}
+                  تسجيل الدخول
+                </Button>
+                <Button 
+                  type="button" 
+                  variant="outline" 
+                  onClick={handleSignUp}
+                  disabled={isLoading || isSigningUp}
+                  className="flex-1 gap-2"
+                >
+                  {isSigningUp && <Loader2 className="h-4 w-4 animate-spin" />}
+                  <UserPlus className="h-4 w-4" />
+                  إنشاء حساب
+                </Button>
+              </div>
+            </form>
+          </Form>
 
           <div className="mt-4 space-y-3">
             <div className="relative">

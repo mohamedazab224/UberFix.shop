@@ -1,39 +1,34 @@
-import { useState, useEffect } from 'react';
+import { useEffect } from 'react';
 import { useParams, useLocation, useNavigate } from 'react-router-dom';
+import { useForm } from 'react-hook-form';
+import { zodResolver } from '@hookform/resolvers/zod';
+import { z } from 'zod';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
-import { Label } from '@/components/ui/label';
 import { Badge } from '@/components/ui/badge';
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
-import { useToast } from '@/hooks/use-toast';
+import { Form, FormControl, FormDescription, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
+import { toast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
 import {
   ArrowRight,
   Star,
   Phone,
-  Mail,
   MapPin,
   Clock,
   AlertCircle,
   CheckCircle2
 } from 'lucide-react';
+import { emergencyServiceSchema } from '@/lib/validationSchemas';
+
+type EmergencyFormData = z.infer<typeof emergencyServiceSchema>;
 
 export default function EmergencyService() {
   const { technicianId } = useParams<{ technicianId: string }>();
   const location = useLocation();
   const navigate = useNavigate();
-  const { toast } = useToast();
-  
-  const [loading, setLoading] = useState(false);
-  const [formData, setFormData] = useState({
-    name: '',
-    phone: '',
-    address: '',
-    description: '',
-    priority: 'high' as const
-  });
 
   const technicianData = location.state as {
     technicianName?: string;
@@ -42,24 +37,22 @@ export default function EmergencyService() {
     status?: string;
   } | null;
 
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    
-    if (!formData.name || !formData.phone || !formData.address || !formData.description) {
-      toast({
-        title: 'خطأ',
-        description: 'يرجى ملء جميع الحقول المطلوبة',
-        variant: 'destructive'
-      });
-      return;
-    }
+  const form = useForm<EmergencyFormData>({
+    resolver: zodResolver(emergencyServiceSchema),
+    defaultValues: {
+      name: '',
+      phone: '',
+      address: '',
+      description: '',
+      priority: 'high',
+    },
+  });
 
-    setLoading(true);
-
+  const onSubmit = async (data: EmergencyFormData) => {
     try {
       const { data: { user } } = await supabase.auth.getUser();
       
-      // Get user's company_id and branch_id from profile
+      // Get user's company_id from profile
       const { data: profile } = await supabase
         .from('profiles')
         .select('company_id')
@@ -68,13 +61,13 @@ export default function EmergencyService() {
       
       const requestData: any = {
         title: `صيانة طارئة - ${technicianData?.specialization || 'خدمة'}`,
-        description: formData.description,
+        description: data.description,
         status: 'pending',
-        priority: 'high',
+        priority: data.priority,
         workflow_stage: 'SUBMITTED',
-        client_name: formData.name,
-        client_phone: formData.phone,
-        location: formData.address,
+        client_name: data.name,
+        client_phone: data.phone,
+        location: data.address,
         assigned_vendor_id: technicianId,
         created_by: user?.id,
         service_type: technicianData?.specialization || 'صيانة عامة',
@@ -82,7 +75,7 @@ export default function EmergencyService() {
         branch_id: '00000000-0000-0000-0000-000000000000'
       };
       
-      const { data, error } = await supabase
+      const { data: createdRequest, error } = await supabase
         .from('maintenance_requests')
         .insert(requestData)
         .select()
@@ -96,10 +89,10 @@ export default function EmergencyService() {
         .insert({
           recipient_id: technicianId,
           title: 'طلب صيانة طارئة جديد',
-          message: `طلب صيانة طارئة من ${formData.name}`,
+          message: `طلب صيانة طارئة من ${data.name}`,
           type: 'warning',
           entity_type: 'maintenance_request',
-          entity_id: data.id
+          entity_id: createdRequest.id
         });
 
       toast({
@@ -118,8 +111,6 @@ export default function EmergencyService() {
         description: 'فشل إرسال الطلب، يرجى المحاولة مرة أخرى',
         variant: 'destructive'
       });
-    } finally {
-      setLoading(false);
     }
   };
 
@@ -214,89 +205,116 @@ export default function EmergencyService() {
               <CardTitle>تفاصيل الطلب</CardTitle>
             </CardHeader>
             <CardContent>
-              <form onSubmit={handleSubmit} className="space-y-4">
-                <div className="space-y-2">
-                  <Label htmlFor="name">الاسم *</Label>
-                  <Input
-                    id="name"
-                    placeholder="أدخل اسمك الكامل"
-                    value={formData.name}
-                    onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-                    required
+              <Form {...form}>
+                <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
+                  <FormField
+                    control={form.control}
+                    name="name"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>الاسم *</FormLabel>
+                        <FormControl>
+                          <Input placeholder="أدخل اسمك الكامل" {...field} />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
                   />
-                </div>
 
-                <div className="space-y-2">
-                  <Label htmlFor="phone">رقم الهاتف *</Label>
-                  <div className="relative">
-                    <Phone className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
-                    <Input
-                      id="phone"
-                      type="tel"
-                      placeholder="05XXXXXXXX"
-                      className="pr-10"
-                      value={formData.phone}
-                      onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
-                      required
-                    />
-                  </div>
-                </div>
-
-                <div className="space-y-2">
-                  <Label htmlFor="address">العنوان *</Label>
-                  <div className="relative">
-                    <MapPin className="absolute right-3 top-3 w-4 h-4 text-muted-foreground" />
-                    <Textarea
-                      id="address"
-                      placeholder="أدخل عنوان موقع الصيانة بالتفصيل"
-                      className="pr-10 min-h-[80px]"
-                      value={formData.address}
-                      onChange={(e) => setFormData({ ...formData, address: e.target.value })}
-                      required
-                    />
-                  </div>
-                </div>
-
-                <div className="space-y-2">
-                  <Label htmlFor="description">وصف المشكلة *</Label>
-                  <Textarea
-                    id="description"
-                    placeholder="صف المشكلة بالتفصيل..."
-                    className="min-h-[120px]"
-                    value={formData.description}
-                    onChange={(e) => setFormData({ ...formData, description: e.target.value })}
-                    required
+                  <FormField
+                    control={form.control}
+                    name="phone"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>رقم الهاتف *</FormLabel>
+                        <FormControl>
+                          <div className="relative">
+                            <Phone className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+                            <Input
+                              type="tel"
+                              placeholder="01xxxxxxxxx"
+                              className="pr-10"
+                              {...field}
+                            />
+                          </div>
+                        </FormControl>
+                        <FormDescription>رقم هاتف مصري (11 رقم)</FormDescription>
+                        <FormMessage />
+                      </FormItem>
+                    )}
                   />
-                </div>
 
-                <div className="bg-destructive/10 border border-destructive/20 rounded-lg p-4 flex items-start gap-3">
-                  <AlertCircle className="w-5 h-5 text-destructive mt-0.5 flex-shrink-0" />
-                  <div className="text-sm">
-                    <p className="font-semibold text-destructive mb-1">طلب طوارئ</p>
-                    <p className="text-muted-foreground">
-                      سيتم معالجة طلبك بأولوية عالية وسيتواصل معك الفني في أقرب وقت ممكن.
-                    </p>
+                  <FormField
+                    control={form.control}
+                    name="address"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>العنوان *</FormLabel>
+                        <FormControl>
+                          <div className="relative">
+                            <MapPin className="absolute right-3 top-3 w-4 h-4 text-muted-foreground" />
+                            <Textarea
+                              placeholder="أدخل عنوان موقع الصيانة بالتفصيل"
+                              className="pr-10 min-h-[80px]"
+                              {...field}
+                            />
+                          </div>
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+
+                  <FormField
+                    control={form.control}
+                    name="description"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>وصف المشكلة *</FormLabel>
+                        <FormControl>
+                          <Textarea
+                            placeholder="صف المشكلة بالتفصيل..."
+                            className="min-h-[120px]"
+                            {...field}
+                          />
+                        </FormControl>
+                        <FormDescription>
+                          {field.value?.length || 0} / 5000 حرف
+                        </FormDescription>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+
+                  <div className="bg-destructive/10 border border-destructive/20 rounded-lg p-4 flex items-start gap-3">
+                    <AlertCircle className="w-5 h-5 text-destructive mt-0.5 flex-shrink-0" />
+                    <div className="text-sm">
+                      <p className="font-semibold text-destructive mb-1">طلب طوارئ</p>
+                      <p className="text-muted-foreground">
+                        سيتم معالجة طلبك بأولوية عالية وسيتواصل معك الفني في أقرب وقت ممكن.
+                      </p>
+                    </div>
                   </div>
-                </div>
 
-                <div className="flex gap-3 pt-4">
-                  <Button
-                    type="button"
-                    variant="outline"
-                    onClick={() => navigate(-1)}
-                    className="flex-1"
-                  >
-                    إلغاء
-                  </Button>
-                  <Button
-                    type="submit"
-                    disabled={loading}
-                    className="flex-1 bg-[#111] hover:bg-[#111]/90 text-white"
-                  >
-                    {loading ? 'جاري الإرسال...' : 'إرسال الطلب'}
-                  </Button>
-                </div>
-              </form>
+                  <div className="flex gap-3 pt-4">
+                    <Button
+                      type="button"
+                      variant="outline"
+                      onClick={() => navigate(-1)}
+                      className="flex-1"
+                    >
+                      إلغاء
+                    </Button>
+                    <Button
+                      type="submit"
+                      disabled={form.formState.isSubmitting}
+                      className="flex-1 bg-[#111] hover:bg-[#111]/90 text-white"
+                    >
+                      {form.formState.isSubmitting ? 'جاري الإرسال...' : 'إرسال الطلب'}
+                    </Button>
+                  </div>
+                </form>
+              </Form>
             </CardContent>
           </Card>
         </div>

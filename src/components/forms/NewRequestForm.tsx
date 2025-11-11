@@ -1,12 +1,15 @@
 import { useState, useEffect } from "react";
+import { useForm } from "react-hook-form";
+import { zodResolver } from "@hookform/resolvers/zod";
+import { z } from "zod";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
-import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
+import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage, FormDescription } from "@/components/ui/form";
 import { MapPin, Phone, Loader2, Building2, Plus } from "lucide-react";
 import { useMaintenanceRequests } from "@/hooks/useMaintenanceRequests";
 import { useToast } from "@/hooks/use-toast";
@@ -16,34 +19,42 @@ import { useRequestLifecycle } from "@/hooks/useRequestLifecycle";
 import { useProperties } from "@/hooks/useProperties";
 import { PropertyForm } from "./PropertyForm";
 import { Alert, AlertDescription } from "@/components/ui/alert";
+import { maintenanceRequestFormSchema } from "@/lib/validationSchemas";
 
 interface NewRequestFormProps {
   onSuccess?: () => void;
   onCancel?: () => void;
 }
 
+type MaintenanceRequestFormData = z.infer<typeof maintenanceRequestFormSchema>;
+
 export function NewRequestForm({ onSuccess, onCancel }: NewRequestFormProps) {
   const { createRequest } = useMaintenanceRequests();
   const { addLifecycleEvent } = useRequestLifecycle();
   const { properties, loading: propertiesLoading } = useProperties();
   const { toast } = useToast();
-  const [isSubmitting, setIsSubmitting] = useState(false);
   const [showPropertyForm, setShowPropertyForm] = useState(false);
-  const [formData, setFormData] = useState({
-    title: "",
-    description: "",
-    client_name: "",
-    client_phone: "",
-    location: "",
-    service_type: "general",
-    priority: "medium",
-    preferred_date: "",
-    preferred_time: "",
-    latitude: null as number | null,
-    longitude: null as number | null,
-    property_id: "" as string
-  });
   const [showLocationPicker, setShowLocationPicker] = useState(false);
+
+  const form = useForm<MaintenanceRequestFormData>({
+    resolver: zodResolver(maintenanceRequestFormSchema),
+    defaultValues: {
+      title: "",
+      description: "",
+      client_name: "",
+      client_phone: "",
+      client_email: "",
+      location: "",
+      service_type: "general",
+      priority: "medium",
+      preferred_date: "",
+      preferred_time: "",
+      customer_notes: "",
+      latitude: null,
+      longitude: null,
+      property_id: "",
+    },
+  });
 
   // التحقق من وجود عقارات عند تحميل المكون
   useEffect(() => {
@@ -52,81 +63,22 @@ export function NewRequestForm({ onSuccess, onCancel }: NewRequestFormProps) {
     }
   }, [propertiesLoading, properties]);
 
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    
-    // التحقق من صحة البيانات
-    if (!formData.title.trim()) {
-      toast({
-        title: "خطأ في البيانات",
-        description: "يرجى إدخال عنوان الطلب",
-        variant: "destructive",
-      });
-      return;
-    }
-
-    if (!formData.client_name.trim()) {
-      toast({
-        title: "خطأ في البيانات",
-        description: "يرجى إدخال اسم العميل",
-        variant: "destructive",
-      });
-      return;
-    }
-
-    if (!formData.client_phone.trim()) {
-      toast({
-        title: "خطأ في البيانات",
-        description: "يرجى إدخال رقم الهاتف",
-        variant: "destructive",
-      });
-      return;
-    }
-
-    // التحقق من صحة رقم الهاتف (11 رقم يبدأ ب 01)
-    const phoneRegex = /^01[0-2,5]{1}[0-9]{8}$/;
-    if (!phoneRegex.test(formData.client_phone)) {
-      toast({
-        title: "خطأ في رقم الهاتف",
-        description: "يرجى إدخال رقم هاتف مصري صحيح (01xxxxxxxxx)",
-        variant: "destructive",
-      });
-      return;
-    }
-
-    if (!formData.location.trim()) {
-      toast({
-        title: "خطأ في البيانات",
-        description: "يرجى إدخال العنوان",
-        variant: "destructive",
-      });
-      return;
-    }
-
-    if (!formData.property_id) {
-      toast({
-        title: "خطأ في البيانات",
-        description: "يرجى اختيار العقار",
-        variant: "destructive",
-      });
-      return;
-    }
-
-    setIsSubmitting(true);
-    
+  const handleSubmit = async (data: MaintenanceRequestFormData) => {
     try {
       // إعداد البيانات للإرسال - createRequest سيتعامل مع company_id و branch_id تلقائياً
       const requestPayload = {
-        title: formData.title,
-        description: formData.description,
-        client_name: formData.client_name,
-        client_phone: formData.client_phone,
-        location: formData.location,
-        service_type: formData.service_type,
-        priority: formData.priority,
-        property_id: formData.property_id || null,
-        latitude: formData.latitude,
-        longitude: formData.longitude,
+        title: data.title,
+        description: data.description,
+        client_name: data.client_name,
+        client_phone: data.client_phone,
+        client_email: data.client_email || undefined,
+        location: data.location,
+        service_type: data.service_type,
+        priority: data.priority,
+        property_id: data.property_id || null,
+        latitude: data.latitude,
+        longitude: data.longitude,
+        customer_notes: data.customer_notes || undefined,
         status: 'Open' as const
       };
       
@@ -140,9 +92,9 @@ export function NewRequestForm({ onSuccess, onCancel }: NewRequestFormProps) {
             'status_change',
             'تم إنشاء الطلب بنجاح',
             { 
-              service_type: formData.service_type,
-              priority: formData.priority,
-              has_location: !!(formData.latitude && formData.longitude)
+              service_type: data.service_type,
+              priority: data.priority,
+              has_location: !!(data.latitude && data.longitude)
             }
           );
 
@@ -152,7 +104,7 @@ export function NewRequestForm({ onSuccess, onCancel }: NewRequestFormProps) {
             await supabase.from('notifications').insert({
               recipient_id: user.id,
               title: 'تم استلام طلبك',
-              message: `تم استلام طلب الصيانة: ${formData.title}`,
+              message: `تم استلام طلب الصيانة: ${data.title}`,
               type: 'success',
               entity_type: 'maintenance_request',
               entity_id: result.id
@@ -168,16 +120,16 @@ export function NewRequestForm({ onSuccess, onCancel }: NewRequestFormProps) {
         });
 
         // إرسال إشعار لأقرب فني إذا تم تحديد الموقع
-        if (formData.latitude && formData.longitude) {
+        if (data.latitude && data.longitude) {
           try {
             const { data: notificationResult, error: notificationError } = await supabase.functions.invoke('send-notification', {
               body: {
                 maintenanceRequestId: result.id,
-                latitude: formData.latitude,
-                longitude: formData.longitude,
-                serviceType: formData.service_type,
-                clientName: formData.client_name,
-                address: formData.location
+                latitude: data.latitude,
+                longitude: data.longitude,
+                serviceType: data.service_type,
+                clientName: data.client_name,
+                address: data.location
               }
             });
 
@@ -212,20 +164,7 @@ export function NewRequestForm({ onSuccess, onCancel }: NewRequestFormProps) {
         // حفظ معرف الطلب قبل مسح البيانات
         const requestId = result.id;
         
-        setFormData({
-          title: "",
-          description: "",
-          client_name: "",
-          client_phone: "",
-          location: "",
-          service_type: "general",
-          priority: "medium",
-          preferred_date: "",
-          preferred_time: "",
-          latitude: null,
-          longitude: null,
-          property_id: ""
-        });
+        form.reset();
         
         // إغلاق النموذج أولاً
         if (onSuccess) {
@@ -244,27 +183,20 @@ export function NewRequestForm({ onSuccess, onCancel }: NewRequestFormProps) {
         description: error instanceof Error ? error.message : "حدث خطأ غير متوقع",
         variant: "destructive",
       });
-    } finally {
-      setIsSubmitting(false);
     }
   };
 
   const handleLocationSelect = (lat: number, lng: number, address?: string) => {
-    setFormData(prev => ({
-      ...prev,
-      latitude: lat,
-      longitude: lng,
-      location: address || prev.location
-    }));
+    form.setValue('latitude', lat);
+    form.setValue('longitude', lng);
+    if (address) {
+      form.setValue('location', address);
+    }
     setShowLocationPicker(false);
     toast({
       title: "تم تحديد الموقع",
       description: "تم حفظ موقعك بنجاح",
     });
-  };
-
-  const handleChange = (field: string, value: string) => {
-    setFormData(prev => ({ ...prev, [field]: value }));
   };
 
   const handlePropertyAdded = () => {
@@ -307,230 +239,318 @@ export function NewRequestForm({ onSuccess, onCancel }: NewRequestFormProps) {
         <CardTitle className="text-xl font-bold text-primary">طلب صيانة جديد</CardTitle>
       </CardHeader>
       <CardContent>
-        <form onSubmit={handleSubmit} className="space-y-6">
-          {/* Property Selection */}
-          <div className="space-y-2">
-            <Label htmlFor="property_id">العقار *</Label>
-            <div className="flex gap-2">
-              <Select 
-                value={formData.property_id} 
-                onValueChange={(value) => handleChange("property_id", value)}
-                required
-              >
-                <SelectTrigger className="flex-1">
-                  <SelectValue placeholder="اختر العقار" />
-                </SelectTrigger>
-                <SelectContent>
-                  {properties.map((property) => (
-                    <SelectItem key={property.id} value={property.id}>
-                      <div className="flex items-center gap-2">
-                        <Building2 className="h-4 w-4" />
-                        <span>{property.name} - {property.address}</span>
-                      </div>
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-              <Dialog>
-                <DialogTrigger asChild>
-                  <Button type="button" variant="outline" size="icon">
-                    <Plus className="h-4 w-4" />
-                  </Button>
-                </DialogTrigger>
-                <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
-                  <DialogHeader>
-                    <DialogTitle>إضافة عقار جديد</DialogTitle>
-                  </DialogHeader>
-                  <PropertyForm 
-                    skipNavigation={true}
-                    onSuccess={() => {
-                      toast({
-                        title: "تم إضافة العقار بنجاح",
-                      });
-                    }}
-                  />
-                </DialogContent>
-              </Dialog>
-            </div>
-          </div>
-
-          {/* Basic Info */}
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <div className="space-y-2">
-              <Label htmlFor="title">عنوان الطلب *</Label>
-              <Input
-                id="title"
-                placeholder="مثال: إصلاح تسريب المياه"
-                value={formData.title}
-                onChange={(e) => handleChange("title", e.target.value)}
-                required
-              />
-            </div>
-
-            <div className="space-y-2">
-              <Label htmlFor="phone">رقم الهاتف *</Label>
-              <div className="relative">
-                <Phone className="absolute right-3 top-3 h-4 w-4 text-muted-foreground" />
-                <Input
-                  id="phone"
-                  placeholder="01xxxxxxxxx"
-                  value={formData.client_phone}
-                  onChange={(e) => handleChange("client_phone", e.target.value)}
-                  className="pr-10"
-                  required
-                />
-              </div>
-            </div>
-
-            <div className="space-y-2">
-              <Label htmlFor="client_name">اسم العميل *</Label>
-              <Input
-                id="client_name"
-                placeholder="اسم العميل"
-                value={formData.client_name}
-                onChange={(e) => handleChange("client_name", e.target.value)}
-                required
-              />
-            </div>
-          </div>
-
-          <div className="space-y-2">
-            <Label htmlFor="location">العنوان *</Label>
-            <div className="flex gap-2">
-              <div className="relative flex-1">
-                <MapPin className="absolute right-3 top-3 h-4 w-4 text-muted-foreground" />
-                <Input
-                  id="location"
-                  placeholder="العنوان التفصيلي"
-                  value={formData.location}
-                  onChange={(e) => handleChange("location", e.target.value)}
-                  className="pr-10"
-                  required
-                />
-              </div>
-              <Dialog open={showLocationPicker} onOpenChange={setShowLocationPicker}>
-                <DialogTrigger asChild>
-                  <Button type="button" variant="outline" size="icon">
-                    <MapPin className="h-4 w-4" />
-                  </Button>
-                </DialogTrigger>
-                <DialogContent className="max-w-4xl">
-                  <DialogHeader>
-                    <DialogTitle>تحديد الموقع على الخريطة</DialogTitle>
-                  </DialogHeader>
-                  <LocationPicker 
-                    onLocationSelect={handleLocationSelect}
-                    initialLatitude={formData.latitude || undefined}
-                    initialLongitude={formData.longitude || undefined}
-                    initialAddress={formData.location}
-                  />
-                </DialogContent>
-              </Dialog>
-            </div>
-            {formData.latitude && formData.longitude && (
-              <p className="text-sm text-green-600">
-                ✓ تم تحديد الموقع على الخريطة
-              </p>
-            )}
-          </div>
-
-
-          {/* Service Details */}
-          <div className="space-y-2">
-            <Label htmlFor="service_type">نوع الخدمة *</Label>
-            <Select value={formData.service_type} onValueChange={(value) => handleChange("service_type", value)}>
-              <SelectTrigger>
-                <SelectValue placeholder="اختر نوع الخدمة" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="plumbing">سباكة</SelectItem>
-                <SelectItem value="electrical">كهرباء</SelectItem>
-                <SelectItem value="hvac">تكييف</SelectItem>
-                <SelectItem value="carpentry">نجارة</SelectItem>
-                <SelectItem value="painting">دهانات</SelectItem>
-                <SelectItem value="cleaning">تنظيف</SelectItem>
-                <SelectItem value="general">صيانة عامة</SelectItem>
-              </SelectContent>
-            </Select>
-          </div>
-
-          <div className="space-y-2">
-            <Label htmlFor="description">وصف المشكلة *</Label>
-            <Textarea
-              id="description"
-              placeholder="اشرح التفاصيل والمشكلة بوضوح..."
-              value={formData.description}
-              onChange={(e) => handleChange("description", e.target.value)}
-              rows={4}
-              required
+        <Form {...form}>
+          <form onSubmit={form.handleSubmit(handleSubmit)} className="space-y-6">
+            {/* Property Selection */}
+            <FormField
+              control={form.control}
+              name="property_id"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>العقار *</FormLabel>
+                  <div className="flex gap-2">
+                    <Select onValueChange={field.onChange} value={field.value}>
+                      <FormControl>
+                        <SelectTrigger className="flex-1">
+                          <SelectValue placeholder="اختر العقار" />
+                        </SelectTrigger>
+                      </FormControl>
+                      <SelectContent>
+                        {properties.map((property) => (
+                          <SelectItem key={property.id} value={property.id}>
+                            <div className="flex items-center gap-2">
+                              <Building2 className="h-4 w-4" />
+                              <span>{property.name} - {property.address}</span>
+                            </div>
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                    <Dialog>
+                      <DialogTrigger asChild>
+                        <Button type="button" variant="outline" size="icon">
+                          <Plus className="h-4 w-4" />
+                        </Button>
+                      </DialogTrigger>
+                      <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
+                        <DialogHeader>
+                          <DialogTitle>إضافة عقار جديد</DialogTitle>
+                        </DialogHeader>
+                        <PropertyForm 
+                          skipNavigation={true}
+                          onSuccess={() => {
+                            toast({
+                              title: "تم إضافة العقار بنجاح",
+                            });
+                          }}
+                        />
+                      </DialogContent>
+                    </Dialog>
+                  </div>
+                  <FormMessage />
+                </FormItem>
+              )}
             />
-          </div>
 
-          {/* Priority & Schedule */}
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-            <div className="space-y-2">
-              <Label htmlFor="priority">الأولوية</Label>
-              <Select value={formData.priority} onValueChange={(value) => handleChange("priority", value)}>
-                <SelectTrigger>
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="low">منخفضة</SelectItem>
-                  <SelectItem value="medium">متوسطة</SelectItem>
-                  <SelectItem value="high">عالية</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
+            {/* Basic Info */}
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <FormField
+                control={form.control}
+                name="title"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>عنوان الطلب *</FormLabel>
+                    <FormControl>
+                      <Input placeholder="مثال: إصلاح تسريب المياه" {...field} />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
 
-            <div className="space-y-2">
-              <Label htmlFor="preferred_date">التاريخ المفضل</Label>
-              <Input
-                id="preferred_date"
-                type="date"
-                value={formData.preferred_date}
-                onChange={(e) => handleChange("preferred_date", e.target.value)}
+              <FormField
+                control={form.control}
+                name="client_phone"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>رقم الهاتف *</FormLabel>
+                    <FormControl>
+                      <div className="relative">
+                        <Phone className="absolute right-3 top-3 h-4 w-4 text-muted-foreground" />
+                        <Input placeholder="01xxxxxxxxx" className="pr-10" {...field} />
+                      </div>
+                    </FormControl>
+                    <FormDescription>رقم هاتف مصري (11 رقم)</FormDescription>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+
+              <FormField
+                control={form.control}
+                name="client_name"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>اسم العميل *</FormLabel>
+                    <FormControl>
+                      <Input placeholder="اسم العميل" {...field} />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+              
+              <FormField
+                control={form.control}
+                name="client_email"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>البريد الإلكتروني</FormLabel>
+                    <FormControl>
+                      <Input type="email" placeholder="example@email.com" {...field} />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
               />
             </div>
 
-            <div className="space-y-2">
-              <Label htmlFor="preferred_time">الوقت المفضل</Label>
-              <Select value={formData.preferred_time} onValueChange={(value) => handleChange("preferred_time", value)}>
-                <SelectTrigger>
-                  <SelectValue placeholder="اختر الوقت" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="morning">صباحاً (8-12)</SelectItem>
-                  <SelectItem value="afternoon">ظهراً (12-4)</SelectItem>
-                  <SelectItem value="evening">مساءً (4-8)</SelectItem>
-                </SelectContent>
-              </Select>
+            <FormField
+              control={form.control}
+              name="location"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>العنوان *</FormLabel>
+                  <div className="flex gap-2">
+                    <FormControl>
+                      <div className="relative flex-1">
+                        <MapPin className="absolute right-3 top-3 h-4 w-4 text-muted-foreground" />
+                        <Input placeholder="العنوان التفصيلي" className="pr-10" {...field} />
+                      </div>
+                    </FormControl>
+                    <Dialog open={showLocationPicker} onOpenChange={setShowLocationPicker}>
+                      <DialogTrigger asChild>
+                        <Button type="button" variant="outline" size="icon">
+                          <MapPin className="h-4 w-4" />
+                        </Button>
+                      </DialogTrigger>
+                      <DialogContent className="max-w-4xl">
+                        <DialogHeader>
+                          <DialogTitle>تحديد الموقع على الخريطة</DialogTitle>
+                        </DialogHeader>
+                        <LocationPicker 
+                          onLocationSelect={handleLocationSelect}
+                          initialLatitude={form.watch('latitude') || undefined}
+                          initialLongitude={form.watch('longitude') || undefined}
+                          initialAddress={field.value}
+                        />
+                      </DialogContent>
+                    </Dialog>
+                  </div>
+                  {form.watch('latitude') && form.watch('longitude') && (
+                    <p className="text-sm text-green-600">
+                      ✓ تم تحديد الموقع على الخريطة
+                    </p>
+                  )}
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+
+            {/* Service Details */}
+            <FormField
+              control={form.control}
+              name="service_type"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>نوع الخدمة *</FormLabel>
+                  <Select onValueChange={field.onChange} value={field.value}>
+                    <FormControl>
+                      <SelectTrigger>
+                        <SelectValue placeholder="اختر نوع الخدمة" />
+                      </SelectTrigger>
+                    </FormControl>
+                    <SelectContent>
+                      <SelectItem value="plumbing">سباكة</SelectItem>
+                      <SelectItem value="electrical">كهرباء</SelectItem>
+                      <SelectItem value="hvac">تكييف</SelectItem>
+                      <SelectItem value="carpentry">نجارة</SelectItem>
+                      <SelectItem value="painting">دهانات</SelectItem>
+                      <SelectItem value="cleaning">تنظيف</SelectItem>
+                      <SelectItem value="general">صيانة عامة</SelectItem>
+                    </SelectContent>
+                  </Select>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+
+            <FormField
+              control={form.control}
+              name="description"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>وصف المشكلة *</FormLabel>
+                  <FormControl>
+                    <Textarea
+                      placeholder="اشرح التفاصيل والمشكلة بوضوح..."
+                      rows={4}
+                      {...field}
+                    />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+
+            {/* Priority & Schedule */}
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+              <FormField
+                control={form.control}
+                name="priority"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>الأولوية</FormLabel>
+                    <Select onValueChange={field.onChange} value={field.value}>
+                      <FormControl>
+                        <SelectTrigger>
+                          <SelectValue />
+                        </SelectTrigger>
+                      </FormControl>
+                      <SelectContent>
+                        <SelectItem value="low">منخفضة</SelectItem>
+                        <SelectItem value="medium">متوسطة</SelectItem>
+                        <SelectItem value="high">عالية</SelectItem>
+                        <SelectItem value="urgent">عاجلة</SelectItem>
+                      </SelectContent>
+                    </Select>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+
+              <FormField
+                control={form.control}
+                name="preferred_date"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>التاريخ المفضل</FormLabel>
+                    <FormControl>
+                      <Input type="date" {...field} />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+
+              <FormField
+                control={form.control}
+                name="preferred_time"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>الوقت المفضل</FormLabel>
+                    <Select onValueChange={field.onChange} value={field.value}>
+                      <FormControl>
+                        <SelectTrigger>
+                          <SelectValue placeholder="اختر الوقت" />
+                        </SelectTrigger>
+                      </FormControl>
+                      <SelectContent>
+                        <SelectItem value="morning">صباحاً (8-12)</SelectItem>
+                        <SelectItem value="afternoon">ظهراً (12-4)</SelectItem>
+                        <SelectItem value="evening">مساءً (4-8)</SelectItem>
+                      </SelectContent>
+                    </Select>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
             </div>
-          </div>
 
-          {/* Priority Badge Preview */}
-          <div className="flex items-center gap-2">
-            <span className="text-sm text-muted-foreground">معاينة الأولوية:</span>
-            <Badge className={
-              formData.priority === "high" ? "bg-destructive text-destructive-foreground" :
-              formData.priority === "medium" ? "bg-warning text-warning-foreground" :
-              "bg-muted text-muted-foreground"
-            }>
-              {formData.priority === "high" ? "عالية" : 
-               formData.priority === "medium" ? "متوسطة" : "منخفضة"}
-            </Badge>
-          </div>
+            <FormField
+              control={form.control}
+              name="customer_notes"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>ملاحظات إضافية</FormLabel>
+                  <FormControl>
+                    <Textarea
+                      placeholder="أي تفاصيل إضافية تريد إضافتها..."
+                      rows={2}
+                      {...field}
+                    />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
 
-          {/* Actions */}
-          <div className="flex gap-3 pt-4">
-            <Button type="submit" className="flex-1" disabled={isSubmitting}>
-              {isSubmitting && <Loader2 className="h-4 w-4 animate-spin ml-2" />}
-              إرسال الطلب
-            </Button>
-            <Button type="button" variant="outline" onClick={onCancel} className="flex-1" disabled={isSubmitting}>
-              إلغاء
-            </Button>
-          </div>
-        </form>
+            {/* Priority Badge Preview */}
+            <div className="flex items-center gap-2">
+              <span className="text-sm text-muted-foreground">معاينة الأولوية:</span>
+              <Badge className={
+                form.watch('priority') === "urgent" || form.watch('priority') === "high" ? "bg-destructive text-destructive-foreground" :
+                form.watch('priority') === "medium" ? "bg-warning text-warning-foreground" :
+                "bg-muted text-muted-foreground"
+              }>
+                {form.watch('priority') === "urgent" ? "عاجلة" :
+                 form.watch('priority') === "high" ? "عالية" : 
+                 form.watch('priority') === "medium" ? "متوسطة" : "منخفضة"}
+              </Badge>
+            </div>
+
+            {/* Actions */}
+            <div className="flex gap-3 pt-4">
+              <Button type="submit" className="flex-1" disabled={form.formState.isSubmitting}>
+                {form.formState.isSubmitting && <Loader2 className="h-4 w-4 animate-spin ml-2" />}
+                إرسال الطلب
+              </Button>
+              <Button type="button" variant="outline" onClick={onCancel} className="flex-1" disabled={form.formState.isSubmitting}>
+                إلغاء
+              </Button>
+            </div>
+          </form>
+        </Form>
       </CardContent>
     </Card>
   );

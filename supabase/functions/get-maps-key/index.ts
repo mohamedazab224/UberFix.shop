@@ -1,6 +1,3 @@
-// IMPORTANT: This edge function is PUBLIC (no auth required) to allow map loading
-// It only returns the Google Maps API key which is public anyway
-
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 
 const corsHeaders = {
@@ -15,34 +12,41 @@ serve(async (req) => {
   }
 
   try {
-    console.log('🗺️ Google Maps API Key request received');
-    
-    // محاولة الحصول على المفاتيح بالترتيب
-    const googleMapsApiKey = Deno.env.get('GOOGLE_MAPS_API_KEY');
+    // Get Google Maps API key from environment
+    const apiKey = Deno.env.get('GOOGLE_MAPS_API_KEY');
 
-    if (!googleMapsApiKey) {
-      console.error('❌ No Google Maps API Key found in environment');
-      throw new Error('Missing Google Maps API Key - please add GOOGLE_MAPS_API_KEY secret');
+    if (!apiKey) {
+      console.error('❌ GOOGLE_MAPS_API_KEY not found in environment variables');
+      return new Response(
+        JSON.stringify({ 
+          error: 'API key not configured',
+          message: 'يرجى تكوين مفتاح Google Maps API في إعدادات المشروع'
+        }),
+        { 
+          status: 500,
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+        }
+      );
     }
 
-    console.log('✅ Google Maps API key loaded successfully');
+    console.log('✅ Google Maps API key retrieved successfully');
 
     return new Response(
-      JSON.stringify({ apiKey: googleMapsApiKey }), 
+      JSON.stringify({ apiKey }),
       { 
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' } 
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' }
       }
     );
   } catch (error) {
-    console.error('❌ Error getting Google Maps API key:', error);
+    console.error('❌ Error in get-maps-key function:', error);
     return new Response(
       JSON.stringify({ 
-        error: 'Failed to get Google Maps API key',
-        message: error instanceof Error ? error.message : 'Unknown error'
-      }), 
+        error: error.message,
+        message: 'حدث خطأ أثناء جلب مفتاح API'
+      }),
       { 
-        status: 500, 
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' } 
+        status: 500,
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' }
       }
     );
   }

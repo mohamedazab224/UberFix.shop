@@ -7,6 +7,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 import { Loader2, ArrowRight, Cog, Shield, Users, Wrench } from "lucide-react";
+import { FcGoogle } from "react-icons/fc";
 
 export default function Login() {
   const [email, setEmail] = useState("");
@@ -93,6 +94,36 @@ export default function Login() {
     }, 100);
   };
 
+  const handleGoogleLogin = async () => {
+    setIsLoading(true);
+    try {
+      const redirectUrl = `${window.location.origin}/auth/callback`;
+      
+      const { error } = await supabase.auth.signInWithOAuth({
+        provider: 'google',
+        options: {
+          redirectTo: redirectUrl,
+        }
+      });
+
+      if (error) {
+        toast({
+          title: "خطأ في تسجيل الدخول",
+          description: error.message,
+          variant: "destructive",
+        });
+      }
+    } catch (error) {
+      toast({
+        title: "حدث خطأ",
+        description: "حاول مرة أخرى لاحقاً",
+        variant: "destructive",
+      });
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
   return (
     <div className="min-h-screen bg-gradient-to-br from-primary/5 via-background to-primary/10 flex items-center justify-center p-4">
       <div className="w-full max-w-md">
@@ -135,7 +166,15 @@ export default function Login() {
                 />
               </div>
               <div className="space-y-2">
-                <Label htmlFor="password">كلمة المرور</Label>
+                <div className="flex items-center justify-between">
+                  <Label htmlFor="password">كلمة المرور</Label>
+                  <Link 
+                    to="/forgot-password" 
+                    className="text-xs text-primary hover:underline"
+                  >
+                    نسيت كلمة المرور؟
+                  </Link>
+                </div>
                 <Input
                   id="password"
                   type="password"
@@ -161,6 +200,26 @@ export default function Login() {
                     <ArrowRight className="mr-2 h-4 w-4" />
                   </>
                 )}
+              </Button>
+              
+              <div className="relative my-6">
+                <div className="absolute inset-0 flex items-center">
+                  <span className="w-full border-t" />
+                </div>
+                <div className="relative flex justify-center text-xs uppercase">
+                  <span className="bg-background px-2 text-muted-foreground">أو</span>
+                </div>
+              </div>
+
+              <Button 
+                type="button" 
+                variant="outline" 
+                className="w-full" 
+                onClick={handleGoogleLogin}
+                disabled={isLoading}
+              >
+                <FcGoogle className="ml-2 h-5 w-5" />
+                تسجيل الدخول باستخدام Google
               </Button>
               
               <Button 

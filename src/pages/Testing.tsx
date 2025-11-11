@@ -2,16 +2,21 @@ import { useState } from "react";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { CheckCircle, XCircle, Clock, PlayCircle, Rocket } from "lucide-react";
+import { CheckCircle, XCircle, Clock, PlayCircle, Rocket, Download, AlertTriangle } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 import { useNavigate } from "react-router-dom";
+import { testLogger, TestLog } from "@/lib/testLogger";
+import { StrictTestValidators } from "@/lib/strictTestValidators";
 
 interface TestResult {
   name: string;
-  status: 'pending' | 'running' | 'success' | 'error';
+  status: 'pending' | 'running' | 'success' | 'error' | 'warning';
   message?: string;
   duration?: number;
+  errors?: string[];
+  warnings?: string[];
+  details?: any;
 }
 
 const Testing = () => {
@@ -94,20 +99,72 @@ const Testing = () => {
     const start = Date.now();
     
     try {
-      const { data, error } = await supabase.from('profiles').select('count');
+      const result = await StrictTestValidators.validateDatabaseConnection();
       const duration = Date.now() - start;
       
-      if (error) throw error;
+      if (!result.isValid) {
+        testLogger.log({
+          test_name: 'اتصال قاعدة البيانات',
+          status: 'error',
+          message: result.errors.join('; '),
+          duration,
+          error_details: result.details,
+        });
+        
+        updateTestResult(index, { 
+          status: 'error', 
+          message: result.errors[0],
+          errors: result.errors,
+          warnings: result.warnings,
+          duration 
+        });
+      } else if (result.warnings.length > 0) {
+        testLogger.log({
+          test_name: 'اتصال قاعدة البيانات',
+          status: 'warning',
+          message: result.warnings.join('; '),
+          duration,
+          error_details: result.details,
+        });
+        
+        updateTestResult(index, { 
+          status: 'warning', 
+          message: `نجح مع تحذيرات: ${result.warnings[0]}`,
+          warnings: result.warnings,
+          duration 
+        });
+      } else {
+        testLogger.log({
+          test_name: 'اتصال قاعدة البيانات',
+          status: 'success',
+          message: `اتصال ناجح - ${duration}ms`,
+          duration,
+        });
+        
+        updateTestResult(index, { 
+          status: 'success', 
+          message: `اتصال ناجح - ${duration}ms`,
+          duration 
+        });
+      }
+    } catch (error) {
+      const duration = Date.now() - start;
+      const errorMsg = error instanceof Error ? error.message : 'خطأ غير معروف';
+      
+      testLogger.log({
+        test_name: 'اتصال قاعدة البيانات',
+        status: 'error',
+        message: errorMsg,
+        duration,
+        error_details: error,
+        stack_trace: error instanceof Error ? error.stack : undefined,
+      });
       
       updateTestResult(index, { 
-        status: 'success', 
-        message: `اتصال ناجح - ${duration}ms`,
-        duration 
-      });
-    } catch (error) {
-      updateTestResult(index, { 
         status: 'error', 
-        message: `فشل الاتصال: ${error instanceof Error ? error.message : 'خطأ غير معروف'}` 
+        message: `فشل الاتصال: ${errorMsg}`,
+        errors: [errorMsg],
+        duration
       });
     }
   };
@@ -117,18 +174,71 @@ const Testing = () => {
     const start = Date.now();
     
     try {
-      const { data: { user } } = await supabase.auth.getUser();
+      const result = await StrictTestValidators.validateAuthentication();
       const duration = Date.now() - start;
       
-      updateTestResult(index, { 
-        status: 'success', 
-        message: user ? `مستخدم مسجل: ${user.email}` : 'غير مسجل الدخول',
-        duration 
-      });
+      if (!result.isValid) {
+        testLogger.log({
+          test_name: 'المصادقة والتسجيل',
+          status: 'error',
+          message: result.errors.join('; '),
+          duration,
+          error_details: result.details,
+        });
+        
+        updateTestResult(index, { 
+          status: 'error', 
+          message: result.errors[0] || 'فشلت المصادقة',
+          errors: result.errors,
+          warnings: result.warnings,
+          duration 
+        });
+      } else if (result.warnings.length > 0) {
+        testLogger.log({
+          test_name: 'المصادقة والتسجيل',
+          status: 'warning',
+          message: result.warnings.join('; '),
+          duration,
+        });
+        
+        updateTestResult(index, { 
+          status: 'warning', 
+          message: `نجح مع تحذيرات: ${result.warnings[0]}`,
+          warnings: result.warnings,
+          duration 
+        });
+      } else {
+        testLogger.log({
+          test_name: 'المصادقة والتسجيل',
+          status: 'success',
+          message: `مصادقة صحيحة - ${duration}ms`,
+          duration,
+        });
+        
+        updateTestResult(index, { 
+          status: 'success', 
+          message: `مصادقة صحيحة - المستخدم: ${result.details?.userEmail || 'N/A'}`,
+          duration 
+        });
+      }
     } catch (error) {
+      const duration = Date.now() - start;
+      const errorMsg = error instanceof Error ? error.message : 'خطأ غير معروف';
+      
+      testLogger.log({
+        test_name: 'المصادقة والتسجيل',
+        status: 'error',
+        message: errorMsg,
+        duration,
+        error_details: error,
+        stack_trace: error instanceof Error ? error.stack : undefined,
+      });
+      
       updateTestResult(index, { 
         status: 'error', 
-        message: `خطأ في المصادقة: ${error instanceof Error ? error.message : 'خطأ غير معروف'}` 
+        message: `خطأ في المصادقة: ${errorMsg}`,
+        errors: [errorMsg],
+        duration
       });
     }
   };
@@ -412,68 +522,151 @@ const Testing = () => {
     }
   };
 
-  // اختبارات RLS Policies
+  // اختبارات RLS Policies مع التحقق الصارم
   const testRLSPolicies = async (index: number) => {
     updateTestResult(index, { status: 'running' });
     const start = Date.now();
     
     try {
-      const policiesCheck = await Promise.all([
-        supabase.from('profiles').select('*').limit(1),
-        supabase.from('maintenance_requests').select('*').limit(1),
-        supabase.from('properties').select('*').limit(1),
-        supabase.from('vendors').select('*').limit(1)
-      ]);
-      const tables = ['profiles', 'maintenance_requests', 'properties', 'vendors'];
-      
+      const result = await StrictTestValidators.validateRLSPolicies();
       const duration = Date.now() - start;
-      const failedTables = policiesCheck.filter(r => r.error).map((_, i) => tables[i]);
       
-      if (failedTables.length === 0) {
+      if (!result.isValid) {
+        testLogger.log({
+          test_name: 'RLS Policies',
+          status: 'error',
+          message: result.errors.join('; '),
+          duration,
+          error_details: result.details,
+        });
+        
         updateTestResult(index, { 
-          status: 'success', 
-          message: `تم التحقق من ${tables.length} جدول - ${duration}ms`,
+          status: 'error', 
+          message: `فشل RLS: ${result.errors[0]}`,
+          errors: result.errors,
+          warnings: result.warnings,
+          duration 
+        });
+      } else if (result.warnings.length > 0) {
+        testLogger.log({
+          test_name: 'RLS Policies',
+          status: 'warning',
+          message: result.warnings.join('; '),
+          duration,
+        });
+        
+        updateTestResult(index, { 
+          status: 'warning', 
+          message: `نجح مع تحذيرات: ${result.warnings.length} تحذير`,
+          warnings: result.warnings,
           duration 
         });
       } else {
+        testLogger.log({
+          test_name: 'RLS Policies',
+          status: 'success',
+          message: `جميع السياسات تعمل بشكل صحيح`,
+          duration,
+        });
+        
         updateTestResult(index, { 
-          status: 'error', 
-          message: `فشل في الجداول: ${failedTables.join(', ')}` 
+          status: 'success', 
+          message: `تم التحقق من ${result.details?.testedTables || 0} جدول - ${duration}ms`,
+          duration 
         });
       }
     } catch (error) {
+      const duration = Date.now() - start;
+      const errorMsg = error instanceof Error ? error.message : 'خطأ غير معروف';
+      
+      testLogger.log({
+        test_name: 'RLS Policies',
+        status: 'error',
+        message: errorMsg,
+        duration,
+        error_details: error,
+        stack_trace: error instanceof Error ? error.stack : undefined,
+      });
+      
       updateTestResult(index, { 
         status: 'error', 
-        message: `خطأ في RLS: ${error instanceof Error ? error.message : 'خطأ غير معروف'}` 
+        message: `خطأ في RLS: ${errorMsg}`,
+        errors: [errorMsg],
+        duration
       });
     }
   };
 
-  // اختبار نزاهة البيانات
+  // اختبار نزاهة البيانات مع التحقق الصارم
   const testDataIntegrity = async (index: number) => {
     updateTestResult(index, { status: 'running' });
     const start = Date.now();
     
     try {
-      // اختبار العلاقات الأجنبية والقيود
-      const { count: requestsCount } = await supabase
-        .from('maintenance_requests')
-        .select('*', { count: 'exact', head: true });
-      
-      const { count: propertiesCount } = await supabase
-        .from('properties')
-        .select('*', { count: 'exact', head: true });
-      
+      const result = await StrictTestValidators.validateDataIntegrity();
       const duration = Date.now() - start;
-      updateTestResult(index, { 
-        status: 'success', 
-        message: `الطلبات: ${requestsCount || 0}, العقارات: ${propertiesCount || 0} - ${duration}ms`,
-        duration 
-      });
+      
+      if (!result.isValid) {
+        testLogger.log({
+          test_name: 'نزاهة البيانات',
+          status: 'error',
+          message: result.errors.join('; '),
+          duration,
+        });
+        
+        updateTestResult(index, { 
+          status: 'error', 
+          message: `مشاكل في البيانات: ${result.errors[0]}`,
+          errors: result.errors,
+          warnings: result.warnings,
+          duration 
+        });
+      } else if (result.warnings.length > 0) {
+        testLogger.log({
+          test_name: 'نزاهة البيانات',
+          status: 'warning',
+          message: result.warnings.join('; '),
+          duration,
+        });
+        
+        updateTestResult(index, { 
+          status: 'warning', 
+          message: `نجح مع ${result.warnings.length} تحذير`,
+          warnings: result.warnings,
+          duration 
+        });
+      } else {
+        testLogger.log({
+          test_name: 'نزاهة البيانات',
+          status: 'success',
+          message: 'جميع العلاقات والبيانات صحيحة',
+          duration,
+        });
+        
+        updateTestResult(index, { 
+          status: 'success', 
+          message: `البيانات سليمة - ${duration}ms`,
+          duration 
+        });
+      }
     } catch (error) {
+      const duration = Date.now() - start;
+      const errorMsg = error instanceof Error ? error.message : 'خطأ غير معروف';
+      
+      testLogger.log({
+        test_name: 'نزاهة البيانات',
+        status: 'error',
+        message: errorMsg,
+        duration,
+        error_details: error,
+        stack_trace: error instanceof Error ? error.stack : undefined,
+      });
+      
       updateTestResult(index, { 
         status: 'error', 
-        message: `خطأ في نزاهة البيانات: ${error instanceof Error ? error.message : 'خطأ غير معروف'}` 
+        message: `خطأ في نزاهة البيانات: ${errorMsg}`,
+        errors: [errorMsg],
+        duration
       });
     }
   };
@@ -1153,38 +1346,113 @@ const Testing = () => {
 
   const runAllTests = async () => {
     setIsRunning(true);
+    testLogger.clear(); // مسح السجلات السابقة
     
+    toast({
+      title: "بدء الاختبارات",
+      description: "جاري تشغيل نظام الاختبار الصارم...",
+    });
+
     const tests = [
-      testDatabaseConnection,
-      testAuthentication,
-      testMaintenanceRequests,
-      testProperties,
-      testVendors,
-      testAppointments,
-      testInvoices,
-      testMapsService,
-      testBackupRestore,
-      testNotifications,
-      testChatbot,
-      testRealtimeUpdates,
+      testDatabaseConnection,      // 0
+      testRLSPolicies,              // 1
+      testDataIntegrity,            // 2
+      testAuthentication,           // 3
+      testUserPermissions,          // 4
+      testSessionSecurity,          // 5
+      testMaintenanceRequests,      // 6
+      testWorkflow,                 // 7
+      testProperties,               // 8
+      testPropertyQRCode,           // 9
+      testVendors,                  // 10
+      testAppointments,             // 11
+      testInvoices,                 // 12
+      testProjects,                 // 13
+      testLandingPage,              // 14
+      testDashboard,                // 15
+      testLoginPage,                // 16
+      testSettingsPage,             // 17
+      testMapsService,              // 18
+      testImageUpload,              // 19
+      testTablesFilters,            // 20
+      testForms,                    // 21
+      testNotifications,            // 22
+      testChatbot,                  // 23
+      testRealtimeUpdates,          // 24
+      testEmailService,             // 25
+      testEdgeFunctionNotifications,// 26
+      testEdgeFunctionInvoice,      // 27
+      testStorage,                  // 28
+      testStoragePolicies,          // 29
+      testFileOperations,           // 30
+      testPageLoadSpeed,            // 31
+      testDatabaseResponse,         // 32
+      testBundleSize,               // 33
+      testMobileResponsive,         // 34
+      testTabletResponsive,         // 35
+      testBrowserCompatibility,     // 36
+      testBackupRestore,            // 37
+      testErrorHandling,            // 38
+      testReportsAnalytics,         // 39
     ];
+
+    const startTime = Date.now();
 
     // تشغيل الاختبارات بالتتابع
     for (let i = 0; i < tests.length; i++) {
-      await tests[i](i);
-      // انتظار قصير بين الاختبارات
-      await new Promise(resolve => setTimeout(resolve, 500));
+      try {
+        await tests[i](i);
+        // انتظار قصير بين الاختبارات للاستقرار
+        await new Promise(resolve => setTimeout(resolve, 300));
+      } catch (error) {
+        console.error(`فشل الاختبار ${i}:`, error);
+        testLogger.log({
+          test_name: testResults[i]?.name || `اختبار ${i}`,
+          status: 'error',
+          message: `فشل حرج: ${error instanceof Error ? error.message : 'Unknown'}`,
+          error_details: error,
+          stack_trace: error instanceof Error ? error.stack : undefined,
+        });
+      }
     }
+
+    const totalDuration = Date.now() - startTime;
+
+    // حفظ النتائج في قاعدة البيانات
+    await testLogger.saveToDatabase();
 
     setIsRunning(false);
     
+    const summary = testLogger.getSummary();
     const successCount = testResults.filter(test => test.status === 'success').length;
+    const errorCount = testResults.filter(test => test.status === 'error').length;
+    const warningCount = testResults.filter(test => test.status === 'warning').length;
     const totalTests = testResults.length;
     
+    console.log('📊 ملخص الاختبارات:', summary);
+    
     toast({
-      title: "اكتمل الاختبار",
-      description: `نجح ${successCount} من ${totalTests} اختبار`,
-      variant: successCount === totalTests ? "default" : "destructive",
+      title: errorCount === 0 ? "✅ اكتمل الاختبار بنجاح" : "⚠️ اكتمل الاختبار مع أخطاء",
+      description: `نجح: ${successCount} | فشل: ${errorCount} | تحذيرات: ${warningCount} | الوقت: ${(totalDuration / 1000).toFixed(2)}ث`,
+      variant: errorCount === 0 ? "default" : "destructive",
+    });
+  };
+
+  const exportTestLogs = () => {
+    const logs = testLogger.exportLogs();
+    const blob = new Blob([logs], { type: 'application/json' });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.href = url;
+    link.download = `test-logs-${new Date().toISOString()}.json`;
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    URL.revokeObjectURL(url);
+
+    toast({
+      title: "تم التصدير",
+      description: "تم تصدير سجلات الاختبار بنجاح",
     });
   };
 
@@ -1194,6 +1462,8 @@ const Testing = () => {
         return <CheckCircle className="h-4 w-4 text-green-500" />;
       case 'error':
         return <XCircle className="h-4 w-4 text-red-500" />;
+      case 'warning':
+        return <AlertTriangle className="h-4 w-4 text-yellow-500" />;
       case 'running':
         return <Clock className="h-4 w-4 text-blue-500 animate-spin" />;
       default:
@@ -1207,6 +1477,8 @@ const Testing = () => {
         return <Badge variant="default" className="bg-green-500">نجح</Badge>;
       case 'error':
         return <Badge variant="destructive">فشل</Badge>;
+      case 'warning':
+        return <Badge variant="secondary" className="bg-yellow-500">تحذير</Badge>;
       case 'running':
         return <Badge variant="secondary">قيد التشغيل</Badge>;
       default:
@@ -1216,6 +1488,7 @@ const Testing = () => {
 
   const successCount = testResults.filter(test => test.status === 'success').length;
   const errorCount = testResults.filter(test => test.status === 'error').length;
+  const warningCount = testResults.filter(test => test.status === 'warning').length;
   const totalTests = testResults.length;
 
   const navigate = useNavigate();
@@ -1245,20 +1518,30 @@ const Testing = () => {
         </CardContent>
       </Card>
 
-      <div className="flex justify-between items-center">
-        <h1 className="text-3xl font-bold">اختبارات النظام الأخرى</h1>
-        <Button 
-          onClick={runAllTests} 
-          disabled={isRunning}
-          className="flex items-center gap-2"
-        >
-          <PlayCircle className="h-4 w-4" />
-          {isRunning ? 'قيد التشغيل...' : 'تشغيل جميع الاختبارات'}
-        </Button>
+      <div className="flex justify-between items-center flex-wrap gap-4">
+        <h1 className="text-3xl font-bold">اختبارات النظام الشاملة</h1>
+        <div className="flex gap-2">
+          <Button 
+            onClick={exportTestLogs} 
+            variant="outline"
+            className="flex items-center gap-2"
+          >
+            <Download className="h-4 w-4" />
+            تصدير السجلات
+          </Button>
+          <Button 
+            onClick={runAllTests} 
+            disabled={isRunning}
+            className="flex items-center gap-2"
+          >
+            <PlayCircle className="h-4 w-4" />
+            {isRunning ? 'قيد التشغيل...' : 'تشغيل جميع الاختبارات'}
+          </Button>
+        </div>
       </div>
 
-      {/* ملخص النتائج */}
-      <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+      {/* ملخص النتائج المحسّن */}
+      <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
         <Card>
           <CardContent className="p-4">
             <div className="text-2xl font-bold text-center">{totalTests}</div>
@@ -1268,21 +1551,27 @@ const Testing = () => {
         <Card>
           <CardContent className="p-4">
             <div className="text-2xl font-bold text-green-600 text-center">{successCount}</div>
-            <div className="text-sm text-muted-foreground text-center">اختبارات ناجحة</div>
+            <div className="text-sm text-muted-foreground text-center">ناجحة ✅</div>
           </CardContent>
         </Card>
         <Card>
           <CardContent className="p-4">
             <div className="text-2xl font-bold text-red-600 text-center">{errorCount}</div>
-            <div className="text-sm text-muted-foreground text-center">اختبارات فاشلة</div>
+            <div className="text-sm text-muted-foreground text-center">فاشلة ❌</div>
           </CardContent>
         </Card>
         <Card>
           <CardContent className="p-4">
-            <div className="text-2xl font-bold text-blue-600 text-center">
+            <div className="text-2xl font-bold text-yellow-600 text-center">{warningCount}</div>
+            <div className="text-sm text-muted-foreground text-center">تحذيرات ⚠️</div>
+          </CardContent>
+        </Card>
+        <Card className={errorCount === 0 && warningCount === 0 ? 'bg-green-50 border-green-300' : errorCount > 0 ? 'bg-red-50 border-red-300' : 'bg-yellow-50 border-yellow-300'}>
+          <CardContent className="p-4">
+            <div className={`text-2xl font-bold text-center ${errorCount === 0 && warningCount === 0 ? 'text-green-600' : errorCount > 0 ? 'text-red-600' : 'text-yellow-600'}`}>
               {totalTests > 0 ? Math.round((successCount / totalTests) * 100) : 0}%
             </div>
-            <div className="text-sm text-muted-foreground text-center">معدل النجاح</div>
+            <div className="text-sm text-muted-foreground text-center font-semibold">معدل النجاح</div>
           </CardContent>
         </Card>
       </div>
@@ -1293,21 +1582,46 @@ const Testing = () => {
           <CardTitle>نتائج الاختبارات التفصيلية</CardTitle>
         </CardHeader>
         <CardContent>
-          <div className="space-y-4">
+          <div className="space-y-3">
             {testResults.map((test, index) => (
-              <div key={index} className="flex items-center justify-between p-4 border rounded-lg">
-                <div className="flex items-center gap-3">
-                  {getStatusIcon(test.status)}
-                  <div>
+              <div 
+                key={index} 
+                className={`flex items-start justify-between p-4 border rounded-lg transition-all ${
+                  test.status === 'error' ? 'border-red-300 bg-red-50' : 
+                  test.status === 'warning' ? 'border-yellow-300 bg-yellow-50' :
+                  test.status === 'success' ? 'border-green-300 bg-green-50' : ''
+                }`}
+              >
+                <div className="flex items-start gap-3 flex-1">
+                  <div className="mt-1">{getStatusIcon(test.status)}</div>
+                  <div className="flex-1">
                     <div className="font-medium">{test.name}</div>
                     {test.message && (
-                      <div className="text-sm text-muted-foreground">{test.message}</div>
+                      <div className="text-sm text-muted-foreground mt-1">{test.message}</div>
+                    )}
+                    {test.errors && test.errors.length > 0 && (
+                      <div className="mt-2 space-y-1">
+                        {test.errors.map((error, i) => (
+                          <div key={i} className="text-xs text-red-600 bg-red-100 px-2 py-1 rounded">
+                            ❌ {error}
+                          </div>
+                        ))}
+                      </div>
+                    )}
+                    {test.warnings && test.warnings.length > 0 && (
+                      <div className="mt-2 space-y-1">
+                        {test.warnings.map((warning, i) => (
+                          <div key={i} className="text-xs text-yellow-700 bg-yellow-100 px-2 py-1 rounded">
+                            ⚠️ {warning}
+                          </div>
+                        ))}
+                      </div>
                     )}
                   </div>
                 </div>
-                <div className="flex items-center gap-2">
+                <div className="flex items-center gap-2 ml-4">
                   {test.duration && (
-                    <span className="text-xs text-muted-foreground">
+                    <span className="text-xs text-muted-foreground whitespace-nowrap">
                       {test.duration}ms
                     </span>
                   )}
@@ -1319,19 +1633,22 @@ const Testing = () => {
         </CardContent>
       </Card>
 
-      {/* إرشادات الاختبار */}
-      <Card>
+      {/* إرشادات الاختبار المحسّنة */}
+      <Card className="border-blue-300 bg-blue-50">
         <CardHeader>
-          <CardTitle>إرشادات ما قبل النشر</CardTitle>
+          <CardTitle className="text-blue-900">✨ معايير الاختبار الصارمة</CardTitle>
         </CardHeader>
         <CardContent>
-          <div className="space-y-3 text-sm">
-            <p>✅ تأكد من نجاح جميع الاختبارات قبل النشر على السيرفر</p>
-            <p>✅ اختبر جميع الوظائف يدوياً في واجهة المستخدم</p>
-            <p>✅ تحقق من سرعة الاستجابة والأداء</p>
-            <p>✅ اختبر التطبيق على أجهزة مختلفة (سطح المكتب، التابلت، الهاتف)</p>
-            <p>✅ تأكد من وجود نسخة احتياطية من قاعدة البيانات</p>
-            <p>✅ راجع إعدادات الأمان والخصوصية</p>
+          <div className="space-y-2 text-sm text-blue-800">
+            <p>🔍 <strong>التحقق الصارم:</strong> النظام لا يمرر أي خطأ مهما كان صغيراً</p>
+            <p>📊 <strong>تسجيل شامل:</strong> جميع الأخطاء والتحذيرات يتم تسجيلها بالتفصيل</p>
+            <p>⚡ <strong>فحص الأداء:</strong> رصد الاستجابات البطيئة (&gt; 500ms للقاعدة، &gt; 1000ms للصفحات)</p>
+            <p>🛡️ <strong>التحقق الأمني:</strong> فحص RLS policies وصلاحيات المستخدمين</p>
+            <p>🔗 <strong>نزاهة البيانات:</strong> التأكد من صحة جميع العلاقات والقيود</p>
+            <p>💾 <strong>حفظ السجلات:</strong> يمكنك تصدير سجلات الاختبار للمراجعة اللاحقة</p>
+            <div className="mt-4 pt-4 border-t border-blue-300">
+              <p className="font-bold text-blue-900">⚠️ لا تنشر التطبيق إلا بعد نجاح جميع الاختبارات بدون أخطاء!</p>
+            </div>
           </div>
         </CardContent>
       </Card>

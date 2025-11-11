@@ -88,6 +88,17 @@ CREATE TABLE public.audit_logs (
   CONSTRAINT audit_logs_pkey PRIMARY KEY (id),
   CONSTRAINT audit_logs_user_id_fkey FOREIGN KEY (user_id) REFERENCES auth.users(id)
 );
+CREATE TABLE public.branch_locations (
+  id text NOT NULL,
+  branch text NOT NULL,
+  address text,
+  branch_type text,
+  link text,
+  icon text,
+  latitude text,
+  longitude text,
+  CONSTRAINT branch_locations_pkey PRIMARY KEY (id)
+);
 CREATE TABLE public.branches (
   id uuid NOT NULL DEFAULT gen_random_uuid(),
   company_id uuid NOT NULL,
@@ -100,8 +111,7 @@ CREATE TABLE public.branches (
   created_at timestamp with time zone NOT NULL DEFAULT now(),
   created_by uuid,
   CONSTRAINT branches_pkey PRIMARY KEY (id),
-  CONSTRAINT branches_company_id_fkey FOREIGN KEY (company_id) REFERENCES public.companies(id),
-  CONSTRAINT branches_created_by_fkey FOREIGN KEY (created_by) REFERENCES auth.users(id)
+  CONSTRAINT branches_company_id_fkey FOREIGN KEY (company_id) REFERENCES public.companies(id)
 );
 CREATE TABLE public.categories (
   id uuid NOT NULL DEFAULT gen_random_uuid(),
@@ -125,8 +135,7 @@ CREATE TABLE public.companies (
   eta_tax_profile_id text,
   created_at timestamp with time zone NOT NULL DEFAULT now(),
   created_by uuid,
-  CONSTRAINT companies_pkey PRIMARY KEY (id),
-  CONSTRAINT companies_created_by_fkey FOREIGN KEY (created_by) REFERENCES auth.users(id)
+  CONSTRAINT companies_pkey PRIMARY KEY (id)
 );
 CREATE TABLE public.districts (
   id bigint NOT NULL DEFAULT nextval('districts_id_seq'::regclass),
@@ -137,19 +146,24 @@ CREATE TABLE public.districts (
 );
 CREATE TABLE public.error_logs (
   id uuid NOT NULL DEFAULT gen_random_uuid(),
+  user_id uuid,
   message text NOT NULL,
   stack text,
-  url text NOT NULL,
-  user_id uuid,
-  user_agent text,
   level text NOT NULL DEFAULT 'error'::text CHECK (level = ANY (ARRAY['error'::text, 'warning'::text, 'info'::text])),
-  metadata jsonb,
-  created_at timestamp with time zone NOT NULL DEFAULT now(),
+  url text,
+  user_agent text,
+  metadata jsonb DEFAULT '{}'::jsonb,
+  error_hash text,
+  count integer DEFAULT 1,
+  first_seen_at timestamp with time zone DEFAULT now(),
+  last_seen_at timestamp with time zone DEFAULT now(),
   resolved_at timestamp with time zone,
   resolved_by uuid,
+  created_at timestamp with time zone DEFAULT now(),
+  updated_at timestamp with time zone DEFAULT now(),
   CONSTRAINT error_logs_pkey PRIMARY KEY (id),
-  CONSTRAINT error_logs_resolved_by_fkey FOREIGN KEY (resolved_by) REFERENCES auth.users(id),
-  CONSTRAINT error_logs_user_id_fkey FOREIGN KEY (user_id) REFERENCES auth.users(id)
+  CONSTRAINT error_logs_user_id_fkey FOREIGN KEY (user_id) REFERENCES auth.users(id),
+  CONSTRAINT error_logs_resolved_by_fkey FOREIGN KEY (resolved_by) REFERENCES auth.users(id)
 );
 CREATE TABLE public.expenses (
   id uuid NOT NULL DEFAULT gen_random_uuid(),
@@ -242,7 +256,15 @@ CREATE TABLE public.maintenance_requests (
   vendor_notes text,
   archived_at timestamp with time zone,
   updated_at timestamp with time zone DEFAULT now(),
+  property_id uuid,
+  latitude double precision,
+  longitude double precision,
+  sla_accept_due timestamp with time zone,
+  sla_arrive_due timestamp with time zone,
+  sla_complete_due timestamp with time zone,
+  customer_notes text,
   CONSTRAINT maintenance_requests_pkey PRIMARY KEY (id),
+  CONSTRAINT maintenance_requests_property_id_fkey FOREIGN KEY (property_id) REFERENCES public.properties(id),
   CONSTRAINT fk_maintenance_requests_assigned_vendor FOREIGN KEY (assigned_vendor_id) REFERENCES public.vendors(id),
   CONSTRAINT maintenance_requests_company_id_fkey FOREIGN KEY (company_id) REFERENCES public.companies(id),
   CONSTRAINT maintenance_requests_branch_id_fkey FOREIGN KEY (branch_id) REFERENCES public.branches(id),
@@ -250,6 +272,24 @@ CREATE TABLE public.maintenance_requests (
   CONSTRAINT maintenance_requests_subcategory_id_fkey FOREIGN KEY (subcategory_id) REFERENCES public.service_subcategories(id),
   CONSTRAINT maintenance_requests_created_by_fkey FOREIGN KEY (created_by) REFERENCES auth.users(id),
   CONSTRAINT maintenance_requests_assigned_vendor_id_fkey FOREIGN KEY (assigned_vendor_id) REFERENCES public.profiles(id)
+);
+CREATE TABLE public.message_logs (
+  id uuid NOT NULL DEFAULT gen_random_uuid(),
+  request_id uuid,
+  recipient text NOT NULL,
+  message_type text NOT NULL CHECK (message_type = ANY (ARRAY['sms'::text, 'whatsapp'::text, 'email'::text])),
+  message_content text NOT NULL,
+  provider text NOT NULL DEFAULT 'twilio'::text,
+  status text NOT NULL DEFAULT 'queued'::text,
+  external_id text,
+  metadata jsonb DEFAULT '{}'::jsonb,
+  error_message text,
+  sent_at timestamp with time zone DEFAULT now(),
+  delivered_at timestamp with time zone,
+  created_at timestamp with time zone NOT NULL DEFAULT now(),
+  updated_at timestamp with time zone NOT NULL DEFAULT now(),
+  CONSTRAINT message_logs_pkey PRIMARY KEY (id),
+  CONSTRAINT message_logs_request_id_fkey FOREIGN KEY (request_id) REFERENCES public.maintenance_requests(id)
 );
 CREATE TABLE public.notifications (
   id uuid NOT NULL DEFAULT gen_random_uuid(),
@@ -263,13 +303,17 @@ CREATE TABLE public.notifications (
   read_at timestamp with time zone,
   created_at timestamp with time zone NOT NULL DEFAULT now(),
   updated_at timestamp with time zone NOT NULL DEFAULT now(),
-  CONSTRAINT notifications_pkey PRIMARY KEY (id)
+  sms_sent boolean DEFAULT false,
+  whatsapp_sent boolean DEFAULT false,
+  message_log_id uuid,
+  CONSTRAINT notifications_pkey PRIMARY KEY (id),
+  CONSTRAINT notifications_message_log_id_fkey FOREIGN KEY (message_log_id) REFERENCES public.message_logs(id)
 );
 CREATE TABLE public.profiles (
   id uuid NOT NULL DEFAULT uuid_generate_v4(),
   name text NOT NULL,
   email text NOT NULL UNIQUE,
-  role text NOT NULL CHECK (role = ANY (ARRAY['admin'::text, 'user'::text, 'technician'::text])),
+  role text NOT NULL,
   department_id uuid,
   reports_to uuid,
   position text,
@@ -409,7 +453,14 @@ CREATE TABLE public.properties (
   qr_code_generated_at timestamp with time zone,
   latitude double precision,
   longitude double precision,
-  CONSTRAINT properties_pkey PRIMARY KEY (id)
+  icon_url text,
+  code text,
+  city_id bigint,
+  district_id bigint,
+  images ARRAY,
+  CONSTRAINT properties_pkey PRIMARY KEY (id),
+  CONSTRAINT properties_city_id_fkey FOREIGN KEY (city_id) REFERENCES public.cities(id),
+  CONSTRAINT properties_district_id_fkey FOREIGN KEY (district_id) REFERENCES public.districts(id)
 );
 CREATE TABLE public.quick_maintenance_requests (
   id uuid NOT NULL DEFAULT gen_random_uuid(),
@@ -530,6 +581,19 @@ CREATE TABLE public.request_status_history (
   CONSTRAINT request_status_history_pkey PRIMARY KEY (id),
   CONSTRAINT request_status_history_changed_by_fkey FOREIGN KEY (changed_by) REFERENCES auth.users(id)
 );
+CREATE TABLE public.reviews (
+  id uuid NOT NULL DEFAULT gen_random_uuid(),
+  technician_id uuid NOT NULL,
+  customer_id uuid NOT NULL,
+  request_id uuid,
+  rating integer NOT NULL CHECK (rating >= 1 AND rating <= 5),
+  comment text,
+  images ARRAY,
+  created_at timestamp with time zone NOT NULL DEFAULT now(),
+  updated_at timestamp with time zone NOT NULL DEFAULT now(),
+  CONSTRAINT reviews_pkey PRIMARY KEY (id),
+  CONSTRAINT reviews_technician_id_fkey FOREIGN KEY (technician_id) REFERENCES public.technicians(id)
+);
 CREATE TABLE public.service_categories (
   id uuid NOT NULL DEFAULT gen_random_uuid(),
   name text NOT NULL,
@@ -615,6 +679,16 @@ CREATE TABLE public.sla_policies (
   CONSTRAINT sla_policies_pkey PRIMARY KEY (id),
   CONSTRAINT sla_policies_category_id_fkey FOREIGN KEY (category_id) REFERENCES public.categories(id)
 );
+CREATE TABLE public.specialization_icons (
+  id uuid NOT NULL DEFAULT gen_random_uuid(),
+  name text NOT NULL UNIQUE,
+  name_ar text NOT NULL,
+  icon_path text NOT NULL,
+  color text DEFAULT '#f5bf23'::text,
+  sort_order integer DEFAULT 0,
+  is_active boolean DEFAULT true,
+  CONSTRAINT specialization_icons_pkey PRIMARY KEY (id)
+);
 CREATE TABLE public.status_defs (
   status text NOT NULL,
   sort integer NOT NULL,
@@ -667,6 +741,128 @@ CREATE TABLE public.system_settings (
   updated_at timestamp with time zone NOT NULL DEFAULT now(),
   CONSTRAINT system_settings_pkey PRIMARY KEY (id)
 );
+CREATE TABLE public.technician_applications (
+  id uuid NOT NULL DEFAULT gen_random_uuid(),
+  full_name text NOT NULL,
+  phone text NOT NULL,
+  email text,
+  specialization text NOT NULL,
+  country text,
+  city text,
+  experience_years integer DEFAULT 0,
+  center_id uuid,
+  status text NOT NULL DEFAULT 'pending'::text CHECK (status = ANY (ARRAY['pending'::text, 'scheduled'::text, 'passed'::text, 'failed'::text, 'rejected'::text, 'cancelled'::text])),
+  exam_date timestamp with time zone,
+  examiner_name text,
+  score numeric,
+  notes text,
+  created_at timestamp with time zone DEFAULT now(),
+  CONSTRAINT technician_applications_pkey PRIMARY KEY (id),
+  CONSTRAINT technician_applications_center_id_fkey FOREIGN KEY (center_id) REFERENCES public.technician_centers(id)
+);
+CREATE TABLE public.technician_centers (
+  id uuid NOT NULL DEFAULT gen_random_uuid(),
+  name text NOT NULL,
+  country text,
+  city text,
+  address text,
+  phone text,
+  is_active boolean DEFAULT true,
+  created_at timestamp with time zone DEFAULT now(),
+  CONSTRAINT technician_centers_pkey PRIMARY KEY (id)
+);
+CREATE TABLE public.technician_documents (
+  id uuid NOT NULL DEFAULT gen_random_uuid(),
+  technician_id uuid,
+  doc_type text NOT NULL,
+  file_url text NOT NULL,
+  verified boolean DEFAULT false,
+  uploaded_at timestamp with time zone DEFAULT now(),
+  CONSTRAINT technician_documents_pkey PRIMARY KEY (id),
+  CONSTRAINT technician_documents_technician_id_fkey FOREIGN KEY (technician_id) REFERENCES public.technicians(id)
+);
+CREATE TABLE public.technician_progress (
+  id uuid NOT NULL DEFAULT gen_random_uuid(),
+  technician_id uuid,
+  step_name text NOT NULL,
+  progress_value integer DEFAULT 0,
+  created_at timestamp with time zone DEFAULT now(),
+  CONSTRAINT technician_progress_pkey PRIMARY KEY (id),
+  CONSTRAINT technician_progress_technician_id_fkey FOREIGN KEY (technician_id) REFERENCES public.technicians(id)
+);
+CREATE TABLE public.technician_regions (
+  technician_id uuid NOT NULL,
+  region_id uuid NOT NULL,
+  CONSTRAINT technician_regions_pkey PRIMARY KEY (technician_id, region_id),
+  CONSTRAINT technician_regions_technician_id_fkey FOREIGN KEY (technician_id) REFERENCES public.technicians(id),
+  CONSTRAINT technician_regions_region_id_fkey FOREIGN KEY (region_id) REFERENCES public.regions(id)
+);
+CREATE TABLE public.technician_reviews (
+  id uuid NOT NULL DEFAULT gen_random_uuid(),
+  technician_id uuid NOT NULL,
+  customer_id uuid,
+  customer_name text NOT NULL,
+  rating integer NOT NULL CHECK (rating >= 1 AND rating <= 5),
+  review_text text,
+  service_request_id uuid,
+  created_at timestamp with time zone DEFAULT now(),
+  updated_at timestamp with time zone DEFAULT now(),
+  CONSTRAINT technician_reviews_pkey PRIMARY KEY (id),
+  CONSTRAINT technician_reviews_technician_id_fkey FOREIGN KEY (technician_id) REFERENCES public.technicians(id),
+  CONSTRAINT technician_reviews_customer_id_fkey FOREIGN KEY (customer_id) REFERENCES auth.users(id)
+);
+CREATE TABLE public.technician_tasks (
+  id uuid NOT NULL DEFAULT gen_random_uuid(),
+  technician_id uuid,
+  task_name text NOT NULL,
+  progress_value integer CHECK (progress_value >= 0 AND progress_value <= 100),
+  completed boolean DEFAULT false,
+  completed_at timestamp with time zone,
+  CONSTRAINT technician_tasks_pkey PRIMARY KEY (id),
+  CONSTRAINT technician_tasks_technician_id_fkey FOREIGN KEY (technician_id) REFERENCES public.technicians(id)
+);
+CREATE TABLE public.technicians (
+  id uuid NOT NULL DEFAULT gen_random_uuid(),
+  name text NOT NULL,
+  phone text,
+  email text,
+  specialization text NOT NULL,
+  profile_image text,
+  rating numeric DEFAULT 0.00 CHECK (rating >= 0::numeric AND rating <= 5::numeric),
+  total_reviews integer DEFAULT 0,
+  status text DEFAULT 'offline'::text CHECK (status = ANY (ARRAY['online'::text, 'busy'::text, 'offline'::text, 'on_route'::text])),
+  current_latitude numeric,
+  current_longitude numeric,
+  location_updated_at timestamp with time zone DEFAULT now(),
+  hourly_rate numeric,
+  available_from time without time zone,
+  available_to time without time zone,
+  bio text,
+  certifications jsonb DEFAULT '[]'::jsonb,
+  service_area_radius numeric DEFAULT 10,
+  company_id uuid,
+  created_by uuid,
+  created_at timestamp with time zone DEFAULT now(),
+  updated_at timestamp with time zone DEFAULT now(),
+  is_active boolean DEFAULT true,
+  is_verified boolean DEFAULT false,
+  application_id uuid,
+  code text UNIQUE,
+  level text NOT NULL DEFAULT 'certified'::text CHECK (level = ANY (ARRAY['certified'::text, 'senior'::text, 'expert'::text, 'supervisor'::text])),
+  verification_center_id uuid,
+  verified_at timestamp with time zone,
+  verification_notes text,
+  icon_url text,
+  country_code text,
+  city_id bigint,
+  district_id bigint,
+  CONSTRAINT technicians_pkey PRIMARY KEY (id),
+  CONSTRAINT technicians_application_id_fkey FOREIGN KEY (application_id) REFERENCES public.technician_applications(id),
+  CONSTRAINT technicians_verification_center_id_fkey FOREIGN KEY (verification_center_id) REFERENCES public.technician_centers(id),
+  CONSTRAINT technicians_city_id_fkey FOREIGN KEY (city_id) REFERENCES public.cities(id),
+  CONSTRAINT technicians_district_id_fkey FOREIGN KEY (district_id) REFERENCES public.districts(id),
+  CONSTRAINT technicians_created_by_fkey FOREIGN KEY (created_by) REFERENCES auth.users(id)
+);
 CREATE TABLE public.units (
   code text NOT NULL,
   name_ar text NOT NULL,
@@ -695,6 +891,17 @@ CREATE TABLE public.user_roles (
   CONSTRAINT user_roles_user_id_fkey FOREIGN KEY (user_id) REFERENCES auth.users(id),
   CONSTRAINT user_roles_assigned_by_fkey FOREIGN KEY (assigned_by) REFERENCES auth.users(id)
 );
+CREATE TABLE public.vendor_location_history (
+  id uuid NOT NULL DEFAULT gen_random_uuid(),
+  vendor_id uuid NOT NULL,
+  latitude double precision NOT NULL,
+  longitude double precision NOT NULL,
+  accuracy double precision,
+  recorded_at timestamp with time zone NOT NULL DEFAULT now(),
+  created_at timestamp with time zone NOT NULL DEFAULT now(),
+  CONSTRAINT vendor_location_history_pkey PRIMARY KEY (id),
+  CONSTRAINT vendor_location_history_vendor_id_fkey FOREIGN KEY (vendor_id) REFERENCES public.vendors(id)
+);
 CREATE TABLE public.vendor_locations (
   id uuid NOT NULL DEFAULT gen_random_uuid(),
   vendor_id uuid NOT NULL,
@@ -722,7 +929,31 @@ CREATE TABLE public.vendors (
   unit_rate numeric,
   created_at timestamp with time zone NOT NULL DEFAULT now(),
   updated_at timestamp with time zone NOT NULL DEFAULT now(),
+  current_latitude double precision,
+  current_longitude double precision,
+  location_updated_at timestamp with time zone,
+  is_tracking_enabled boolean DEFAULT false,
+  map_icon text,
   CONSTRAINT vendors_pkey PRIMARY KEY (id)
+);
+CREATE TABLE public.whatsapp_messages (
+  id uuid NOT NULL DEFAULT gen_random_uuid(),
+  message_sid text NOT NULL UNIQUE,
+  sender_id uuid,
+  recipient_phone text NOT NULL,
+  message_body text NOT NULL,
+  status text NOT NULL DEFAULT 'queued'::text,
+  request_id uuid,
+  media_url text,
+  delivered_at timestamp with time zone,
+  read_at timestamp with time zone,
+  error_code text,
+  error_message text,
+  created_at timestamp with time zone NOT NULL DEFAULT now(),
+  updated_at timestamp with time zone NOT NULL DEFAULT now(),
+  CONSTRAINT whatsapp_messages_pkey PRIMARY KEY (id),
+  CONSTRAINT whatsapp_messages_sender_id_fkey FOREIGN KEY (sender_id) REFERENCES auth.users(id),
+  CONSTRAINT whatsapp_messages_request_id_fkey FOREIGN KEY (request_id) REFERENCES public.maintenance_requests(id)
 );
 CREATE TABLE public.work_tasks (
   id uuid NOT NULL DEFAULT gen_random_uuid(),
